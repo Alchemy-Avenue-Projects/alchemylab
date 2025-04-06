@@ -1,10 +1,20 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import AppLayout from "@/components/layout/AppLayout";
+import NotFound from "@/pages/NotFound";
+import Dashboard from "@/pages/Dashboard";
+import Campaigns from "@/pages/Campaigns";
+import Analytics from "@/pages/Analytics";
+import AIInsights from "@/pages/AIInsights";
+import Media from "@/pages/Media";
+import Creator from "@/pages/Creator";
+import Notifications from "@/pages/Notifications";
+import Team from "@/pages/Team";
+import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -15,8 +25,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/campaigns" element={<Campaigns />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/ai-insights" element={<AIInsights />} />
+            <Route path="/media" element={<Media />} />
+            <Route path="/creator" element={<Creator />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/team" element={<Team />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
