@@ -84,7 +84,7 @@ const Sidebar: React.FC = () => {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton 
                     asChild 
-                    active={isActive(item.href)}
+                    isActive={isActive(item.href)}
                     className="justify-between"
                   >
                     <Link to={item.href} className="flex items-center justify-between w-full">
@@ -116,7 +116,7 @@ const Sidebar: React.FC = () => {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton 
                     asChild 
-                    active={isActive(item.href)}
+                    isActive={isActive(item.href)}
                   >
                     <Link to={item.href} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
