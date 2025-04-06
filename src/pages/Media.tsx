@@ -44,14 +44,16 @@ const Media: React.FC = () => {
           <Button variant="outline" size="icon">
             <Filter className="h-4 w-4" />
           </Button>
-          <TabsList>
-            <TabsTrigger value="grid">
-              <Grid2X2 className="h-4 w-4" />
-            </TabsTrigger>
-            <TabsTrigger value="list" defaultChecked>
-              <List className="h-4 w-4" />
-            </TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="grid">
+            <TabsList>
+              <TabsTrigger value="grid">
+                <Grid2X2 className="h-4 w-4" />
+              </TabsTrigger>
+              <TabsTrigger value="list">
+                <List className="h-4 w-4" />
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
       
