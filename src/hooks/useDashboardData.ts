@@ -98,7 +98,7 @@ export const useDashboardData = () => {
   const accountsQuery = useQuery({
     queryKey: ["ad-accounts", organizationId],
     queryFn: async () => {
-      if (!organizationId) return [];
+      if (!organizationId) return { accounts: [], staleAccounts: [] };
 
       const { data, error } = await supabase
         .from("ad_accounts")
@@ -141,7 +141,7 @@ export const useDashboardData = () => {
     campaignAnalytics: analyticsQuery.data || [],
     isAnalyticsLoading: analyticsQuery.isLoading,
     
-    accountsData: accountsQuery.data,
+    accountsData: accountsQuery.data || { accounts: [], staleAccounts: [] },
     isAccountsLoading: accountsQuery.isLoading,
     
     alerts: {

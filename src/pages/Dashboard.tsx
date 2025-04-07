@@ -1,10 +1,20 @@
+
 import React from "react";
 import { 
   ArrowUpRight, 
   ArrowDownRight,
-  LineChart
+  LineChart,
+  Facebook as FacebookIcon,
+  Linkedin as LinkedinIcon,
+  Instagram as InstagramIcon,
+  Plus,
+  BadgeCheck,
+  TrendingUp,
+  SearchX,
+  MousePointerClick,
+  Lightbulb
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -153,7 +163,7 @@ const Dashboard: React.FC = () => {
               title="Facebook Ads"
               accountName="Marketing Agency"
               status="Connected"
-              icon={<Facebook className="text-blue-600" />}
+              icon={<FacebookIcon className="text-blue-600" />}
               metrics={{
                 spend: "$5,432.10",
                 impressions: "1.2M",
@@ -164,7 +174,7 @@ const Dashboard: React.FC = () => {
               title="LinkedIn Ads"
               accountName="Marketing Agency"
               status="Connected"
-              icon={<Linkedin className="text-blue-700" />}
+              icon={<LinkedinIcon className="text-blue-700" />}
               metrics={{
                 spend: "$3,210.45",
                 impressions: "320K",
@@ -175,7 +185,7 @@ const Dashboard: React.FC = () => {
               title="Instagram Ads"
               accountName="Marketing Agency"
               status="Connected"
-              icon={<Instagram className="text-pink-600" />}
+              icon={<InstagramIcon className="text-pink-600" />}
               metrics={{
                 spend: "$2,876.32",
                 impressions: "950K",
