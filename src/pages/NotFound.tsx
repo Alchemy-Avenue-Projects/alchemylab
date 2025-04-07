@@ -18,7 +18,7 @@ const NotFound: React.FC = () => {
         <Button asChild className="alchemy-gradient">
           <Link to="/" className="flex items-center">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back to AlchemyLab
           </Link>
         </Button>
       </div>
