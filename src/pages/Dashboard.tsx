@@ -1,19 +1,10 @@
-
 import React from "react";
 import { 
   ArrowUpRight, 
   ArrowDownRight,
-  Facebook, 
-  Linkedin, 
-  BadgeCheck, 
-  SearchX,
-  Instagram,
-  TrendingUp,
-  Lightbulb,
-  MousePointerClick,
-  Plus
+  LineChart
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,8 +20,28 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
+import AISuggestionCard from "@/components/dashboard/AISuggestionCard";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Dashboard: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { 
+    suggestionOfTheDay,
+    activeCampaigns,
+    campaignAnalytics,
+    alerts,
+    isSuggestionLoading,
+    isCampaignsLoading,
+    isAnalyticsLoading,
+    accountsData
+  } = useDashboardData();
+
+  const refreshSuggestions = () => {
+    queryClient.invalidateQueries({ queryKey: ["ai-suggestion-of-the-day"] });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -59,25 +70,74 @@ const Dashboard: React.FC = () => {
           value="$12,543.21"
           change={8.2}
           positive={true}
+          isLoading={isAnalyticsLoading}
         />
         <StatCard 
           title="Total Conversions"
           value="1,823"
           change={-2.1}
           positive={false}
+          isLoading={isAnalyticsLoading}
         />
         <StatCard 
           title="Average CPA"
           value="$6.88"
           change={-12.5}
           positive={true}
+          isLoading={isAnalyticsLoading}
         />
         <StatCard 
           title="CTR"
           value="2.4%"
           change={0.5}
           positive={true}
+          isLoading={isAnalyticsLoading}
         />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          {isSuggestionLoading ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">AI Suggestion of the Day</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-24 flex items-center justify-center">
+                  <div className="animate-spin h-6 w-6 border-2 border-alchemy-600 border-t-transparent rounded-full"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : suggestionOfTheDay ? (
+            <AISuggestionCard 
+              suggestion={suggestionOfTheDay} 
+              onSuggestionUpdate={refreshSuggestions}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center">
+                  <LineChart className="h-4 w-4 mr-2 text-alchemy-600" />
+                  AI Assistant
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  No AI suggestions available at the moment. As your campaigns gather more data, 
+                  AlchemyLab will analyze performance and provide optimization recommendations.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+        
+        <div>
+          <DashboardAlerts 
+            lowCtrCampaigns={alerts.lowCtrCampaigns}
+            staleAccounts={alerts.staleAccounts || []}
+            campaigns={activeCampaigns}
+          />
+        </div>
       </div>
       
       <Tabs defaultValue="accounts">
@@ -220,9 +280,28 @@ interface StatCardProps {
   value: string;
   change: number;
   positive: boolean;
+  isLoading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, change, positive }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, change, positive, isLoading }) => {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-8 flex items-center">
+            <div className="animate-pulse bg-muted/50 h-6 w-20 rounded"></div>
+          </div>
+          <div className="flex items-center mt-1">
+            <div className="animate-pulse bg-muted/50 h-4 w-12 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card>
       <CardHeader className="pb-2">

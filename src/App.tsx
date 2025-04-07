@@ -15,30 +15,36 @@ import Creator from "@/pages/Creator";
 import Notifications from "@/pages/Notifications";
 import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/campaigns" element={<Campaigns />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/ai-insights" element={<AIInsights />} />
-            <Route path="/media" element={<Media />} />
-            <Route path="/creator" element={<Creator />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <NotificationProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/ai-insights" element={<AIInsights />} />
+                <Route path="/media" element={<Media />} />
+                <Route path="/creator" element={<Creator />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/team" element={<Team />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </NotificationProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
