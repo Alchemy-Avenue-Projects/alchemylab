@@ -22,18 +22,25 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
+// Define types to match the Supabase schema
+interface Client {
+  id: string;
+  name: string;
+  organization_id: string;
+  industry?: string;
+  time_zone?: string;
+  created_at: string;
+}
+
 interface Asset {
   id: string;
   file_name: string;
   url: string;
-  asset_type: string;
+  asset_type: 'image' | 'video' | 'text';
   uploaded_at: string;
   client_id: string;
-}
-
-interface Folder {
-  name: string;
-  id: string;
+  uploaded_by: string;
+  usage_count?: number;
 }
 
 const Media: React.FC = () => {
@@ -54,7 +61,7 @@ const Media: React.FC = () => {
         .select('*');
       
       if (error) throw error;
-      return data || [];
+      return data as Client[] || [];
     }
   });
 
@@ -86,11 +93,17 @@ const Media: React.FC = () => {
   // Create folder (actually a client in this data model)
   const createFolderMutation = useMutation({
     mutationFn: async (folderName: string) => {
+      // Get the user's organization ID
+      const { data: orgData, error: orgError } = await supabase.rpc('get_user_org_id');
+      
+      if (orgError) throw orgError;
+      const organizationId = orgData;
+      
       const { data, error } = await supabase
         .from('clients')
         .insert([{ 
           name: folderName,
-          organization_id: (await supabase.rpc('get_user_org_id')).data
+          organization_id: organizationId
         }])
         .select();
       
@@ -142,6 +155,11 @@ const Media: React.FC = () => {
           .from('assets')
           .getPublicUrl(filePath);
 
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) throw new Error("User not authenticated");
+
         // Save to assets table
         const { error: dbError } = await supabase
           .from('assets')
@@ -150,8 +168,8 @@ const Media: React.FC = () => {
             file_name: file.name,
             url: publicUrl,
             asset_type: file.type.startsWith('image/') ? 'image' : 
-                        file.type.startsWith('video/') ? 'video' : 'text',
-            uploaded_by: (await supabase.auth.getUser()).data.user?.id
+                      file.type.startsWith('video/') ? 'video' : 'text',
+            uploaded_by: user.id
           }]);
 
         if (dbError) throw dbError;
