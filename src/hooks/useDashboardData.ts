@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export const useDashboardData = () => {
   const { profile } = useAuth();
+  // Access organization_id safely
   const organizationId = profile?.organization_id;
 
   // Fetch AI suggestion of the day

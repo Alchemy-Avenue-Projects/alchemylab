@@ -101,7 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
-  const isAdmin = profile?.role === "admin";
+  // Check if the profile has role property and it equals "admin"
+  const isAdmin = !!profile?.role && profile.role === "admin";
 
   return (
     <AuthContext.Provider

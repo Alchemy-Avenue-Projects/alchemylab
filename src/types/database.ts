@@ -14,12 +14,15 @@ export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Client = Database["public"]["Tables"]["clients"]["Row"];
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
+// Base Profile type from database
+export type ProfileBase = Database["public"]["Tables"]["profiles"]["Row"];
+
 // Extended Profile type to include additional fields used in the UI
-export interface Profile extends Database["public"]["Tables"]["profiles"]["Row"] {
+export type Profile = ProfileBase & {
   company?: string;
   job_title?: string;
   bio?: string;
-}
+};
 
 // Enums
 export type NotificationType = Database["public"]["Enums"]["notification_type"];

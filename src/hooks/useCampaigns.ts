@@ -15,6 +15,7 @@ type StatusFilter = CampaignStatus | "all-status";
 export const useCampaigns = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
+  // Access organization_id safely
   const organizationId = profile?.organization_id;
   
   // Filters with proper typing

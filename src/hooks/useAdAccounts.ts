@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export const useAdAccounts = () => {
   const { profile } = useAuth();
+  // Access organization_id safely
   const organizationId = profile?.organization_id;
 
   const { data: adAccounts = [], isLoading, error } = useQuery({
