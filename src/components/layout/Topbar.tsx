@@ -38,8 +38,7 @@ const Topbar: React.FC = () => {
             to="/"
             className="flex items-center space-x-2 font-bold text-xl"
           >
-            <Logo className="h-6 w-6" />
-            <span className="hidden md:inline">AlchemyLab</span>
+            <Logo className="h-6 w-6" showText={!isMobile} />
           </Link>
         </div>
         <div className="flex items-center space-x-1">
@@ -58,8 +57,7 @@ const Topbar: React.FC = () => {
               to="/"
               className="flex items-center space-x-2 font-bold text-xl"
             >
-              <Logo className="h-6 w-6" />
-              <span>AlchemyLab</span>
+              <Logo className="h-6 w-6" showText={true} />
             </Link>
           </div>
           <Navigation />

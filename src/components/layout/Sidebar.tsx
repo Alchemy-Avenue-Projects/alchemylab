@@ -39,26 +39,26 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { icon: BarChart3, label: "Dashboard", href: "/" },
-  { icon: Layers, label: "Campaigns", href: "/campaigns" },
-  { icon: Database, label: "Analytics", href: "/analytics" },
-  { icon: FlaskConical, label: "AI Insights", href: "/ai-insights", badge: "New" },
-  { icon: Image, label: "Media Library", href: "/media" },
-  { icon: Sparkles, label: "Ad Creator", href: "/creator" },
-  { icon: BellRing, label: "Notifications", href: "/notifications", badge: 3 },
+  { icon: BarChart3, label: "Dashboard", href: "/app" },
+  { icon: Layers, label: "Campaigns", href: "/app/campaigns" },
+  { icon: Database, label: "Analytics", href: "/app/analytics" },
+  { icon: FlaskConical, label: "AI Insights", href: "/app/ai-insights", badge: "New" },
+  { icon: Image, label: "Media Library", href: "/app/media" },
+  { icon: Sparkles, label: "Ad Creator", href: "/app/creator" },
+  { icon: BellRing, label: "Notifications", href: "/app/notifications", badge: 3 },
 ];
 
 const secondaryNavItems: NavItem[] = [
-  { icon: Users, label: "Team", href: "/team" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: Users, label: "Team", href: "/app/team" },
+  { icon: Settings, label: "Settings", href: "/app/settings" },
 ];
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
 
   const isActive = (href: string) => {
-    if (href === "/") {
-      return location.pathname === "/";
+    if (href === "/app") {
+      return location.pathname === "/app";
     }
     return location.pathname.startsWith(href);
   };
