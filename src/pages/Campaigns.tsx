@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   Search, 
   Plus, 
@@ -11,7 +11,8 @@ import {
   Trash, 
   Pause, 
   Play,
-  Download
+  Download,
+  Eye
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Select,
@@ -47,133 +49,163 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+  SheetClose,
+} from "@/components/ui/sheet";
 
-interface Campaign {
-  id: string;
-  name: string;
-  platform: string;
-  status: "Active" | "Paused" | "Completed" | "Draft";
-  budget: string;
-  spent: string;
-  impressions: string;
-  clicks: string;
-  ctr: string;
-  conversions: string;
-  cpa: string;
-  dateCreated: string;
-}
-
-const campaigns: Campaign[] = [
-  {
-    id: "1",
-    name: "Summer Sale Promotion",
-    platform: "Facebook",
-    status: "Active",
-    budget: "$5,000",
-    spent: "$2,134.50",
-    impressions: "650K",
-    clicks: "23.4K",
-    ctr: "3.6%",
-    conversions: "342",
-    cpa: "$6.24",
-    dateCreated: "2025-03-15"
-  },
-  {
-    id: "2",
-    name: "Product Launch",
-    platform: "LinkedIn",
-    status: "Active",
-    budget: "$3,000",
-    spent: "$1,876.25",
-    impressions: "210K",
-    clicks: "8.2K",
-    ctr: "3.9%",
-    conversions: "124",
-    cpa: "$15.13",
-    dateCreated: "2025-03-20"
-  },
-  {
-    id: "3",
-    name: "Brand Awareness",
-    platform: "Instagram",
-    status: "Paused",
-    budget: "$2,500",
-    spent: "$987.50",
-    impressions: "420K",
-    clicks: "18.7K",
-    ctr: "4.5%",
-    conversions: "92",
-    cpa: "$10.73",
-    dateCreated: "2025-03-10"
-  },
-  {
-    id: "4",
-    name: "Lead Generation",
-    platform: "Google Ads",
-    status: "Active",
-    budget: "$4,500",
-    spent: "$3,245.75",
-    impressions: "980K",
-    clicks: "42.6K",
-    ctr: "4.3%",
-    conversions: "531",
-    cpa: "$6.11",
-    dateCreated: "2025-03-05"
-  },
-  {
-    id: "5",
-    name: "Retargeting Campaign",
-    platform: "Facebook",
-    status: "Active",
-    budget: "$2,000",
-    spent: "$1,523.40",
-    impressions: "325K",
-    clicks: "18.9K",
-    ctr: "5.8%",
-    conversions: "276",
-    cpa: "$5.52",
-    dateCreated: "2025-03-12"
-  },
-  {
-    id: "6",
-    name: "End of Year Promotion",
-    platform: "TikTok",
-    status: "Draft",
-    budget: "$3,500",
-    spent: "$0",
-    impressions: "0",
-    clicks: "0",
-    ctr: "0%",
-    conversions: "0",
-    cpa: "$0",
-    dateCreated: "2025-03-25"
-  },
-  {
-    id: "7",
-    name: "Holiday Campaign",
-    platform: "Pinterest",
-    status: "Completed",
-    budget: "$1,800",
-    spent: "$1,800",
-    impressions: "412K",
-    clicks: "19.3K",
-    ctr: "4.7%",
-    conversions: "205",
-    cpa: "$8.78",
-    dateCreated: "2025-02-10"
-  }
-];
+import { format } from "date-fns";
+import { useCampaigns, CampaignWithAccount } from "@/hooks/useCampaigns";
+import { useAdAccounts } from "@/hooks/useAdAccounts";
+import { CampaignForm } from "@/components/campaigns/CampaignForm";
+import { AdPreview } from "@/components/campaigns/AdPreview";
+import { useToast } from "@/hooks/use-toast";
+import { Ad } from "@/types/database";
 
 const Campaigns: React.FC = () => {
+  const { 
+    campaigns, 
+    isLoading,
+    filters,
+    setFilters,
+    createCampaign,
+    updateCampaign,
+    deleteCampaign,
+    fetchAdsForCampaign,
+    isCreating,
+    isUpdating,
+    isDeleting
+  } = useCampaigns();
+  
+  const { adAccounts, isLoading: isLoadingAdAccounts } = useAdAccounts();
+  const { toast } = useToast();
+  
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<CampaignWithAccount | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [campaignToDelete, setCampaignToDelete] = useState<string | null>(null);
+  
+  const [previewCampaign, setPreviewCampaign] = useState<CampaignWithAccount | null>(null);
+  const [previewAds, setPreviewAds] = useState<Ad[]>([]);
+  const [loadingAds, setLoadingAds] = useState(false);
+
+  const handleCreateCampaign = (data: any) => {
+    createCampaign(data, {
+      onSuccess: () => {
+        setCreateDialogOpen(false);
+      }
+    });
+  };
+
+  const handleUpdateCampaign = (data: any) => {
+    if (!editingCampaign) return;
+    
+    updateCampaign({
+      id: editingCampaign.id,
+      ...data
+    }, {
+      onSuccess: () => {
+        setEditingCampaign(null);
+      }
+    });
+  };
+
+  const handleDeleteCampaign = () => {
+    if (!campaignToDelete) return;
+    
+    deleteCampaign(campaignToDelete, {
+      onSuccess: () => {
+        setShowDeleteDialog(false);
+        setCampaignToDelete(null);
+      }
+    });
+  };
+
+  const handlePreviewAds = async (campaign: CampaignWithAccount) => {
+    try {
+      setPreviewCampaign(campaign);
+      setLoadingAds(true);
+      const ads = await fetchAdsForCampaign(campaign.id);
+      setPreviewAds(ads);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load ads for this campaign",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingAds(false);
+    }
+  };
+
+  const handleFilterChange = (type: 'platform' | 'status', value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [type]: value
+    }));
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters(prev => ({
+      ...prev,
+      search: e.target.value
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-semibold">Campaigns</h1>
         <div className="flex items-center space-x-2">
-          <Button className="alchemy-gradient" onClick={() => {}}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Campaign
-          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="alchemy-gradient">
+                <Plus className="h-4 w-4 mr-2" />
+                New Campaign
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[550px]">
+              <DialogHeader>
+                <DialogTitle>Create New Campaign</DialogTitle>
+                <DialogDescription>
+                  Fill out the form below to create a new advertising campaign.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {isLoadingAdAccounts ? (
+                <div className="py-8 flex items-center justify-center">
+                  <div className="animate-spin h-6 w-6 border-2 border-alchemy-600 border-t-transparent rounded-full"></div>
+                </div>
+              ) : adAccounts.length === 0 ? (
+                <div className="py-4 text-center">
+                  <p className="text-muted-foreground mb-2">No ad accounts found.</p>
+                  <p className="text-sm">You need to connect an ad account before creating campaigns.</p>
+                </div>
+              ) : (
+                <CampaignForm 
+                  onSubmit={handleCreateCampaign} 
+                  adAccounts={adAccounts} 
+                  isLoading={isCreating} 
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       
@@ -192,6 +224,8 @@ const Campaigns: React.FC = () => {
                 <Input
                   placeholder="Search campaigns..."
                   className="pl-8 w-full md:w-64"
+                  value={filters.search}
+                  onChange={handleSearchChange}
                 />
               </div>
               <Button variant="outline" size="icon">
@@ -200,7 +234,10 @@ const Campaigns: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-2 w-full md:w-auto">
-              <Select defaultValue="all-platforms">
+              <Select 
+                value={filters.platform} 
+                onValueChange={(value) => handleFilterChange('platform', value)}
+              >
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="All Platforms" />
                 </SelectTrigger>
@@ -215,7 +252,10 @@ const Campaigns: React.FC = () => {
                 </SelectContent>
               </Select>
               
-              <Select defaultValue="all-status">
+              <Select 
+                value={filters.status} 
+                onValueChange={(value) => handleFilterChange('status', value)}
+              >
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
@@ -223,8 +263,7 @@ const Campaigns: React.FC = () => {
                   <SelectItem value="all-status">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="ended">Ended</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -252,110 +291,197 @@ const Campaigns: React.FC = () => {
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
-                  <TableHead>
-                    <div className="flex items-center space-x-1">
-                      <span>Conversions</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center space-x-1">
-                      <span>CPA</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center space-x-1">
-                      <span>CTR</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                    </div>
-                  </TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>End Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {campaigns.map((campaign) => (
-                  <TableRow key={campaign.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        {campaign.name}
-                        <div className="text-xs text-muted-foreground">
-                          Created: {campaign.dateCreated}
-                        </div>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex justify-center">
+                        <div className="animate-spin h-6 w-6 border-2 border-alchemy-600 border-t-transparent rounded-full"></div>
                       </div>
-                    </TableCell>
-                    <TableCell>{campaign.platform}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={
-                          campaign.status === "Active" ? "outline" : 
-                          campaign.status === "Paused" ? "secondary" :
-                          campaign.status === "Draft" ? "default" : "outline"
-                        } 
-                        className={
-                          campaign.status === "Active" ? "text-green-500 border-green-200" : 
-                          campaign.status === "Completed" ? "text-blue-500 border-blue-200" : ""
-                        }
-                      >
-                        {campaign.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div>{campaign.budget}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Spent: {campaign.spent}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{campaign.conversions}</TableCell>
-                    <TableCell>{campaign.cpa}</TableCell>
-                    <TableCell>{campaign.ctr}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            {campaign.status === "Active" ? (
-                              <>
-                                <Pause className="h-4 w-4 mr-2" />
-                                Pause
-                              </>
-                            ) : campaign.status === "Paused" ? (
-                              <>
-                                <Play className="h-4 w-4 mr-2" />
-                                Resume
-                              </>
-                            ) : null}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : campaigns.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <p className="text-muted-foreground">No campaigns found.</p>
+                      <p className="text-sm mt-1">Create a new campaign to get started.</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  campaigns.map((campaign) => (
+                    <TableRow key={campaign.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          {campaign.name}
+                          <div className="text-xs text-muted-foreground">
+                            Created: {format(new Date(campaign.created_at), "MMM d, yyyy")}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{campaign.ad_accounts?.platform || "Unknown"}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            campaign.status === "active" ? "outline" : 
+                            campaign.status === "paused" ? "secondary" : "default"
+                          } 
+                          className={
+                            campaign.status === "active" ? "text-green-500 border-green-200" : 
+                            campaign.status === "ended" ? "text-blue-500 border-blue-200" : ""
+                          }
+                        >
+                          {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>${campaign.budget ? campaign.budget.toFixed(2) : '0.00'}</TableCell>
+                      <TableCell>{format(new Date(campaign.start_date), "MMM d, yyyy")}</TableCell>
+                      <TableCell>
+                        {campaign.end_date 
+                          ? format(new Date(campaign.end_date), "MMM d, yyyy")
+                          : "Not set"
+                        }
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <Sheet onOpenChange={(open) => {
+                            if (open) handlePreviewAds(campaign);
+                          }}>
+                            <SheetTrigger asChild>
+                              <Button variant="ghost" size="icon" title="Preview Ads">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </SheetTrigger>
+                            <SheetContent side="right" className="sm:max-w-md md:max-w-lg">
+                              <SheetHeader>
+                                <SheetTitle>Ads for {previewCampaign?.name}</SheetTitle>
+                                <SheetDescription>
+                                  {campaign.ad_accounts?.platform} • {campaign.status}
+                                </SheetDescription>
+                              </SheetHeader>
+                              <div className="mt-4">
+                                <AdPreview ads={previewAds} isLoading={loadingAds} />
+                              </div>
+                              <SheetFooter className="mt-4">
+                                <SheetClose asChild>
+                                  <Button variant="outline">Close</Button>
+                                </SheetClose>
+                              </SheetFooter>
+                            </SheetContent>
+                          </Sheet>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem asChild>
+                                <button className="flex items-center w-full" onClick={() => handlePreviewAds(campaign)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Ads
+                                </button>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <button className="flex items-center w-full" onClick={() => setEditingCampaign(campaign)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </button>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                {campaign.status === "active" ? (
+                                  <button 
+                                    className="flex items-center w-full"
+                                    onClick={() => updateCampaign({ id: campaign.id, status: "paused" })}
+                                  >
+                                    <Pause className="h-4 w-4 mr-2" />
+                                    Pause
+                                  </button>
+                                ) : campaign.status === "paused" ? (
+                                  <button 
+                                    className="flex items-center w-full"
+                                    onClick={() => updateCampaign({ id: campaign.id, status: "active" })}
+                                  >
+                                    <Play className="h-4 w-4 mr-2" />
+                                    Resume
+                                  </button>
+                                ) : null}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <button 
+                                  className="flex items-center w-full text-red-600"
+                                  onClick={() => {
+                                    setCampaignToDelete(campaign.id);
+                                    setShowDeleteDialog(true);
+                                  }}
+                                >
+                                  <Trash className="h-4 w-4 mr-2" />
+                                  Delete
+                                </button>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Campaign Dialog */}
+      <Dialog 
+        open={!!editingCampaign} 
+        onOpenChange={(open) => !open && setEditingCampaign(null)}
+      >
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Edit Campaign</DialogTitle>
+            <DialogDescription>
+              Update the details of your campaign.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingCampaign && (
+            <CampaignForm 
+              onSubmit={handleUpdateCampaign} 
+              adAccounts={adAccounts} 
+              initialData={editingCampaign} 
+              isLoading={isUpdating} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this campaign? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2 sm:space-x-0">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteCampaign} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete Campaign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
