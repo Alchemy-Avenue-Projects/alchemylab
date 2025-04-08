@@ -1,1 +1,9 @@
+
 project_id = "yiqfsetkcnvudalyntvw"
+# This file is used to configure the Supabase Edge Functions.
+
+[functions.oauth-callback]
+verify_jwt = true
+
+[functions.refresh-token]
+verify_jwt = true

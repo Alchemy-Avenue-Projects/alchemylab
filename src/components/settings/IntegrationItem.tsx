@@ -8,9 +8,18 @@ interface IntegrationItemProps {
   status: "connected" | "not-connected";
   account?: string;
   logo: string;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
 }
 
-const IntegrationItem: React.FC<IntegrationItemProps> = ({ name, status, account, logo }) => {
+const IntegrationItem: React.FC<IntegrationItemProps> = ({ 
+  name, 
+  status, 
+  account, 
+  logo,
+  onConnect,
+  onDisconnect
+}) => {
   return (
     <div className="flex justify-between items-center p-4 border rounded-md">
       <div className="flex items-center">
@@ -25,10 +34,10 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({ name, status, account
       {status === "connected" ? (
         <div className="flex items-center">
           <Badge variant="outline" className="text-green-500 border-green-200 mr-2">Connected</Badge>
-          <Button variant="outline" size="sm">Manage</Button>
+          <Button variant="outline" size="sm" onClick={onDisconnect}>Disconnect</Button>
         </div>
       ) : (
-        <Button className="alchemy-gradient">Connect</Button>
+        <Button className="alchemy-gradient" onClick={onConnect}>Connect</Button>
       )}
     </div>
   );

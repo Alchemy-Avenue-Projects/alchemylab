@@ -18,6 +18,7 @@ import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { PlatformsProvider } from "@/contexts/PlatformsContext";
 
 // Marketing website pages
 import LandingLayout from "@/components/layout/LandingLayout";
@@ -25,6 +26,7 @@ import Homepage from "@/pages/Homepage";
 import Pricing from "@/pages/Pricing";
 import Features from "@/pages/Features";
 import Auth from "@/pages/Auth";
+import OAuthCallback from "@/pages/OAuthCallback";
 import { useAuth } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -84,6 +86,9 @@ function AppRoutes() {
         </RedirectIfAuthenticated>
       } />
       
+      {/* OAuth Callback Route */}
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
+      
       {/* For development purposes: allow direct access to app pages without authentication */}
       {/* App Pages - With Relaxed Authentication for Development */}
       <Route path="/app" element={<AppLayout />}>
@@ -108,11 +113,13 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <NotificationProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <PlatformsProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </PlatformsProvider>
         </NotificationProvider>
       </AuthProvider>
     </TooltipProvider>
