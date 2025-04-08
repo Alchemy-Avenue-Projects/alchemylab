@@ -1,13 +1,11 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import LandingLayout from "@/components/layout/LandingLayout";
 import { BarChart3, Sparkles, LayoutGrid, FileBarChart, Image, Users, Shield, CheckCircle2, Zap, TrendingUp, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function Homepage() {
   return (
-    <LandingLayout>
+    <>
       {/* Hero Section */}
       <section className="py-20 md:py-28 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-primary/10 to-transparent pointer-events-none" />
@@ -236,7 +234,7 @@ export default function Homepage() {
           </div>
         </div>
       </section>
-    </LandingLayout>
+    </>
   );
 }
 

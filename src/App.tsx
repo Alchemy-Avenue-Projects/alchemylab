@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -93,9 +92,7 @@ function AppRoutes() {
       {/* App Pages - Protected by authentication */}
       <Route path="/app" element={
         <RequireAuth>
-          <SidebarProvider>
-            <AppLayout />
-          </SidebarProvider>
+          <AppLayout />
         </RequireAuth>
       }>
         <Route index element={<Dashboard />} />
