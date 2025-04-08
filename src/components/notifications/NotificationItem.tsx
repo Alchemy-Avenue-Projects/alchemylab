@@ -28,15 +28,13 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification }) => 
   
   const getIcon = () => {
     switch (notification.type) {
-      case "alert":
+      case "campaign_warning":
         return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case "success":
+      case "ai_suggestion_ready":
         return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case "info":
+      case "report_ready":
         return <Info className="h-5 w-5 text-blue-500" />;
-      case "analytics":
-        return <BarChart2 className="h-5 w-5 text-purple-500" />;
-      case "warning":
+      case "account_disconnected":
         return <AlertTriangle className="h-5 w-5 text-amber-500" />;
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;

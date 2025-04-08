@@ -1,6 +1,6 @@
+
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate, Link } from "react-router-dom";
 import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,10 @@ import { Navigation } from "./Navigation";
 import NotificationDropdown from "../notifications/NotificationDropdown";
 
 const Topbar: React.FC = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const isMobile = useMobile();
   const [showNav, setShowNav] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   const toggleSidebar = () => {
     setShowNav(!showNav);
@@ -36,7 +35,7 @@ const Topbar: React.FC = () => {
             </Button>
           )}
           <Link
-            href="/"
+            to="/"
             className="flex items-center space-x-2 font-bold text-xl"
           >
             <Logo className="h-6 w-6" />
@@ -56,7 +55,7 @@ const Topbar: React.FC = () => {
         >
           <div className="px-4 mb-4">
             <Link
-              href="/"
+              to="/"
               className="flex items-center space-x-2 font-bold text-xl"
             >
               <Logo className="h-6 w-6" />
