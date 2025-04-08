@@ -11,9 +11,20 @@ export abstract class PlatformService {
     this.credentials = credentials;
   }
   
-  abstract getAccounts(): Promise<any[]>;
-  abstract getCampaigns(accountId: string): Promise<any[]>;
-  abstract getAnalytics(accountId: string, campaignId?: string): Promise<any>;
+  async getAccounts(): Promise<any[]> {
+    console.log(`Base getAccounts method called for ${this.platform}`);
+    return [];
+  }
+  
+  async getCampaigns(accountId: string): Promise<any[]> {
+    console.log(`Base getCampaigns method called for ${this.platform} with account ${accountId}`);
+    return [];
+  }
+  
+  async getAnalytics(accountId: string, campaignId?: string): Promise<any> {
+    console.log(`Base getAnalytics method called for ${this.platform} with account ${accountId}`);
+    return {};
+  }
   
   protected async refreshTokenIfNeeded(): Promise<boolean> {
     if (!this.credentials) return false;

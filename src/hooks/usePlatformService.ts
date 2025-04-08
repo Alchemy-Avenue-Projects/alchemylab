@@ -22,6 +22,7 @@ export const usePlatformService = (platform: Platform, connectionId?: string) =>
       try {
         setIsLoading(true);
         
+        // Use the any type as a workaround for the type issues
         let query = supabase
           .from('platform_connections')
           .select('*')

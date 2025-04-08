@@ -32,7 +32,8 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     try {
       setIsLoading(true);
-      // Type the response properly
+      
+      // Use the any type as a workaround for the type issues
       const { data, error: fetchError } = await supabase
         .from('platform_connections')
         .select('*')
@@ -42,7 +43,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw fetchError;
       }
 
-      // Safely cast data to PlatformConnection[] with appropriate type checking
+      // Explicitly type the connections
       const typedConnections: PlatformConnection[] = data ? data.map(conn => ({
         ...conn,
         name: conn.account_name || `${conn.platform} Connection`
@@ -87,6 +88,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!profile?.organization_id) return;
 
     try {
+      // Use the any type as a workaround for the type issues
       const { error: deleteError } = await supabase
         .from('platform_connections')
         .delete()

@@ -44,7 +44,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="Facebook Ads"
               status={getConnection('facebook') ? "connected" : "not-connected"}
-              account={getConnection('facebook')?.accountName}
+              account={getConnection('facebook')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('facebook')}
               onDisconnect={getConnection('facebook') ? 
@@ -53,7 +53,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="Google Ads"
               status={getConnection('google') ? "connected" : "not-connected"}
-              account={getConnection('google')?.accountName}
+              account={getConnection('google')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('google')}
               onDisconnect={getConnection('google') ? 
@@ -62,7 +62,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="LinkedIn Ads"
               status={getConnection('linkedin') ? "connected" : "not-connected"}
-              account={getConnection('linkedin')?.accountName}
+              account={getConnection('linkedin')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('linkedin')}
               onDisconnect={getConnection('linkedin') ? 
@@ -71,7 +71,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="TikTok Ads"
               status={getConnection('tiktok') ? "connected" : "not-connected"}
-              account={getConnection('tiktok')?.accountName}
+              account={getConnection('tiktok')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('tiktok')}
               onDisconnect={getConnection('tiktok') ? 
@@ -80,7 +80,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="Pinterest Ads"
               status={getConnection('pinterest') ? "connected" : "not-connected"}
-              account={getConnection('pinterest')?.accountName}
+              account={getConnection('pinterest')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('pinterest')}
               onDisconnect={getConnection('pinterest') ? 
@@ -102,7 +102,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="Google Analytics 4"
               status={getConnection('google_analytics') ? "connected" : "not-connected"}
-              account={getConnection('google_analytics')?.accountName}
+              account={getConnection('google_analytics')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('google_analytics')}
               onDisconnect={getConnection('google_analytics') ? 
@@ -111,7 +111,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="Mixpanel"
               status={getConnection('mixpanel') ? "connected" : "not-connected"}
-              account={getConnection('mixpanel')?.accountName}
+              account={getConnection('mixpanel')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('mixpanel')}
               onDisconnect={getConnection('mixpanel') ? 
@@ -120,7 +120,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="Amplitude"
               status={getConnection('amplitude') ? "connected" : "not-connected"}
-              account={getConnection('amplitude')?.accountName}
+              account={getConnection('amplitude')?.account_name}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('amplitude')}
               onDisconnect={getConnection('amplitude') ? 
@@ -142,7 +142,7 @@ const IntegrationsTab: React.FC = () => {
             <IntegrationItem 
               name="OpenAI"
               status={getConnection('openai') ? "connected" : "not-connected"}
-              account={getConnection('openai')?.accountName || "API Key: sk-...***"}
+              account={getConnection('openai')?.account_name || "API Key: sk-...***"}
               logo="/placeholder.svg"
               onConnect={() => handleConnect('openai')}
               onDisconnect={getConnection('openai') ? 

@@ -7,5 +7,16 @@ export class OpenAIService extends PlatformService {
     super('openai', credentials);
   }
   
-  // Implement OpenAI-specific methods here
+  // Implementation of required methods
+  async getAccounts(): Promise<any[]> {
+    return [{ id: 'default', name: 'OpenAI Account' }];
+  }
+  
+  async getCampaigns(): Promise<any[]> {
+    return []; // OpenAI doesn't have campaigns
+  }
+  
+  async getAnalytics(): Promise<any> {
+    return {}; // OpenAI doesn't have analytics in the same way as ad platforms
+  }
 }
