@@ -1,7 +1,6 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/icons/Logo";
+import Logo from "@/components/icons/Logo";
 import { ChevronRight, Menu, X } from "lucide-react";
 import { useState } from "react";
 
@@ -18,10 +17,7 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
         <div className="container flex h-16 items-center justify-between py-4">
           <div className="flex items-center gap-2">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md alchemy-gradient flex items-center justify-center">
-                <Logo className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-bold text-xl">AlchemyLab</span>
+              <Logo />
             </Link>
           </div>
           
@@ -57,7 +53,6 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
           </Button>
         </div>
         
-        {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 px-4 border-t">
             <nav className="flex flex-col space-y-4">
@@ -104,10 +99,7 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-md alchemy-gradient flex items-center justify-center">
-                  <Logo className="h-5 w-5 text-white" />
-                </div>
-                <span className="font-bold text-xl">AlchemyLab</span>
+                <Logo />
               </div>
               <p className="text-sm text-muted-foreground">
                 Transform your marketing with AI-powered insights

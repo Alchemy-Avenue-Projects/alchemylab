@@ -33,7 +33,7 @@ const HeroSection: React.FC = () => {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
-            No credit card required • 7-day free trial • Cancel anytime
+            7-day free trial • Cancel anytime
           </p>
         </div>
         

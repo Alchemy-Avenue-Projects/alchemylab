@@ -7,7 +7,7 @@ interface LogoProps {
   showText?: boolean;
 }
 
-export const Logo: React.FC<LogoProps> = ({ className, showText = false }) => {
+export const Logo: React.FC<LogoProps> = ({ className = "h-6 w-6", showText = true }) => {
   return (
     <div className="flex items-center gap-2">
       <div className={`rounded-md alchemy-gradient flex items-center justify-center ${className}`}>
@@ -17,3 +17,5 @@ export const Logo: React.FC<LogoProps> = ({ className, showText = false }) => {
     </div>
   );
 };
+
+export default Logo;
