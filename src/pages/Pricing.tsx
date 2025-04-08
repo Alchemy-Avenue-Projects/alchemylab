@@ -1,11 +1,9 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { CheckCircle2 } from "lucide-react";
-import LandingLayout from "@/components/layout/LandingLayout";
 
 type PricingPeriod = 'monthly' | 'annual';
 type PricingTier = 'starter' | 'professional' | 'enterprise';
@@ -98,16 +96,13 @@ export default function Pricing() {
   const [period, setPeriod] = useState<PricingPeriod>('monthly');
   const navigate = useNavigate();
   
-  // Function to handle plan selection
   const selectPlan = (plan: PricingTier) => {
-    // Store the selected plan in localStorage
     localStorage.setItem('selectedPlan', plan);
-    // Navigate to signup page
     navigate('/auth?mode=signup');
   };
   
   return (
-    <LandingLayout>
+    <>
       <section className="py-20">
         <div className="container">
           <div className="text-center mb-16">
@@ -222,6 +217,6 @@ export default function Pricing() {
           </div>
         </div>
       </section>
-    </LandingLayout>
+    </>
   );
 }

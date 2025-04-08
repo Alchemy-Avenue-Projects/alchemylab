@@ -1,7 +1,5 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import LandingLayout from "@/components/layout/LandingLayout";
 import { 
   BarChart3, 
   Sparkles, 
@@ -18,7 +16,7 @@ import {
 
 export default function Features() {
   return (
-    <LandingLayout>
+    <>
       <section className="py-20 md:py-28">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center mb-16">
@@ -141,7 +139,7 @@ export default function Features() {
           </div>
         </div>
       </section>
-    </LandingLayout>
+    </>
   );
 }
 

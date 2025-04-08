@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,28 +62,19 @@ function RedirectIfAuthenticated({ children }: { children: JSX.Element }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Marketing Pages */}
-      <Route path="/" element={
+      {/* Marketing Pages wrapped with LandingLayout */}
+      <Route element={
         <RedirectIfAuthenticated>
           <LandingLayout>
-            <Homepage />
+            <Outlet />
           </LandingLayout>
         </RedirectIfAuthenticated>
-      } />
-      <Route path="/pricing" element={
-        <RedirectIfAuthenticated>
-          <LandingLayout>
-            <Pricing />
-          </LandingLayout>
-        </RedirectIfAuthenticated>
-      } />
-      <Route path="/features" element={
-        <RedirectIfAuthenticated>
-          <LandingLayout>
-            <Features />
-          </LandingLayout>
-        </RedirectIfAuthenticated>
-      } />
+      }>
+        <Route path="/" element={<Homepage />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/features" element={<Features />} />
+      </Route>
+      
       <Route path="/auth" element={
         <RedirectIfAuthenticated>
           <Auth />
