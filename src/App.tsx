@@ -18,6 +18,12 @@ import Settings from "@/pages/Settings";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 
+// Marketing website pages
+import Homepage from "@/pages/Homepage";
+import Pricing from "@/pages/Pricing";
+import Features from "@/pages/Features";
+import Auth from "@/pages/Auth";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -29,16 +35,23 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<AppLayout />}>
+              {/* Marketing Pages */}
+              <Route path="/" element={<Homepage />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/auth" element={<Auth />} />
+              
+              {/* App Pages */}
+              <Route path="/app" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
-                <Route path="/campaigns" element={<Campaigns />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/ai-insights" element={<AIInsights />} />
-                <Route path="/media" element={<Media />} />
-                <Route path="/creator" element={<Creator />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/team" element={<Team />} />
-                <Route path="/settings" element={<Settings />} />
+                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="ai-insights" element={<AIInsights />} />
+                <Route path="media" element={<Media />} />
+                <Route path="creator" element={<Creator />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="team" element={<Team />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

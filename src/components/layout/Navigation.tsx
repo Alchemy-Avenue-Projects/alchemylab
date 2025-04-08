@@ -24,47 +24,47 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     title: "Dashboard",
-    href: "/",
+    href: "/app",
     icon: <Home className="h-5 w-5" />,
   },
   {
     title: "Campaigns",
-    href: "/campaigns",
+    href: "/app/campaigns",
     icon: <LayoutGrid className="h-5 w-5" />,
   },
   {
     title: "Analytics",
-    href: "/analytics",
+    href: "/app/analytics",
     icon: <BarChart2 className="h-5 w-5" />,
   },
   {
     title: "AI Insights",
-    href: "/ai-insights",
+    href: "/app/ai-insights",
     icon: <Sparkles className="h-5 w-5" />,
   },
   {
     title: "Media",
-    href: "/media",
+    href: "/app/media",
     icon: <Image className="h-5 w-5" />,
   },
   {
     title: "Creator",
-    href: "/creator",
+    href: "/app/creator",
     icon: <MessageSquareDashed className="h-5 w-5" />,
   },
   {
     title: "Notifications",
-    href: "/notifications", 
+    href: "/app/notifications", 
     icon: <Bell className="h-5 w-5" />,
   },
   {
     title: "Team",
-    href: "/team",
+    href: "/app/team",
     icon: <Users className="h-5 w-5" />,
   },
   {
     title: "Settings",
-    href: "/settings",
+    href: "/app/settings",
     icon: <Settings className="h-5 w-5" />,
   },
 ];
