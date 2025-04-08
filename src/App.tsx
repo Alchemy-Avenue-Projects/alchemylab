@@ -37,6 +37,9 @@ function RequireAuth({ children }: { children: JSX.Element }) {
     return <div className="h-screen w-full flex items-center justify-center">Loading...</div>;
   }
   
+  // For development purposes, comment this out if you want to bypass authentication
+  // return children;
+  
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
@@ -81,12 +84,9 @@ function AppRoutes() {
         </RedirectIfAuthenticated>
       } />
       
-      {/* App Pages - Protected by authentication */}
-      <Route path="/app" element={
-        <RequireAuth>
-          <AppLayout />
-        </RequireAuth>
-      }>
+      {/* For development purposes: allow direct access to app pages without authentication */}
+      {/* App Pages - With Relaxed Authentication for Development */}
+      <Route path="/app" element={<AppLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="analytics" element={<Analytics />} />

@@ -28,31 +28,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Add a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.log("Auth loading timeout reached, forcing loading state to false");
+      setIsLoading(false);
+    }, 5000); // Set a reasonable timeout
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         // Fetch user profile if authenticated
         if (session?.user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          setProfile(data as Profile);
+          try {
+            const { data } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            setProfile(data as Profile);
+          } catch (error) {
+            console.error("Error fetching profile:", error);
+            // Still set loading to false even if profile fetch fails
+            setProfile(null);
+          }
         } else {
           setProfile(null);
         }
         
         setIsLoading(false);
+        clearTimeout(loadingTimeout);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -62,17 +77,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .select('*')
           .eq('id', session.user.id)
           .single()
-          .then(({ data }) => {
-            setProfile(data as Profile);
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("Error fetching profile:", error);
+              setProfile(null);
+            } else {
+              setProfile(data as Profile);
+            }
             setIsLoading(false);
+            clearTimeout(loadingTimeout);
           });
       } else {
         setIsLoading(false);
+        clearTimeout(loadingTimeout);
       }
+    }).catch(error => {
+      console.error("Session fetch error:", error);
+      setIsLoading(false);
+      clearTimeout(loadingTimeout);
     });
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
     };
   }, []);
 
