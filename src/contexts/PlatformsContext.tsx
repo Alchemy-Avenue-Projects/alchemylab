@@ -32,6 +32,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     try {
       setIsLoading(true);
+      // Type the response properly
       const { data, error: fetchError } = await supabase
         .from('platform_connections')
         .select('*')
@@ -41,7 +42,13 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw fetchError;
       }
 
-      setConnections(data as PlatformConnection[] || []);
+      // Safely cast data to PlatformConnection[] with appropriate type checking
+      const typedConnections: PlatformConnection[] = data ? data.map(conn => ({
+        ...conn,
+        name: conn.account_name || `${conn.platform} Connection`
+      })) : [];
+      
+      setConnections(typedConnections);
     } catch (err) {
       console.error('Error fetching platform connections:', err);
       setError('Failed to load platform connections.');

@@ -540,6 +540,69 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_connections: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          auth_token: string | null
+          connected: boolean
+          connected_by: string | null
+          created_at: string
+          error: string | null
+          id: string
+          organization_id: string
+          platform: string
+          refresh_token: string | null
+          token_expiry: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_name?: string | null
+          auth_token?: string | null
+          connected?: boolean
+          connected_by?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          organization_id: string
+          platform: string
+          refresh_token?: string | null
+          token_expiry?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string | null
+          auth_token?: string | null
+          connected?: boolean
+          connected_by?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          organization_id?: string
+          platform?: string
+          refresh_token?: string | null
+          token_expiry?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_clients"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "platform_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

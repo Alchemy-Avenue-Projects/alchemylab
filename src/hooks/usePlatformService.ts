@@ -32,7 +32,7 @@ export const usePlatformService = (platform: Platform, connectionId?: string) =>
           query = query.eq('id', connectionId);
         }
         
-        const { data, error: fetchError } = await query.single();
+        const { data, error: fetchError } = await query.maybeSingle();
 
         if (fetchError) {
           throw fetchError;
@@ -40,11 +40,12 @@ export const usePlatformService = (platform: Platform, connectionId?: string) =>
 
         if (!data) {
           setService(PlatformServiceFactory.getService(platform));
+          setIsLoading(false);
           return;
         }
 
         const credentials: PlatformCredentials = {
-          accessToken: data.auth_token,
+          accessToken: data.auth_token || '',
           refreshToken: data.refresh_token,
           expiresAt: data.token_expiry ? new Date(data.token_expiry) : undefined,
           accountId: data.account_id

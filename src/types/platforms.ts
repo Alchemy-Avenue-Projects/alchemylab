@@ -16,18 +16,22 @@ export type AIPlatform =
 
 export type Platform = MarketingPlatform | AnalyticsPlatform | AIPlatform;
 
+// Define a type for our database platform_connections table
 export interface PlatformConnection {
   id: string;
-  platform: Platform;
-  name: string;
+  platform: string;
+  organization_id: string;
+  auth_token?: string;
+  refresh_token?: string;
+  token_expiry?: string;
+  account_name?: string;
+  account_id?: string;
   connected: boolean;
-  accountName?: string;
-  accountId?: string;
-  authToken?: string;
-  refreshToken?: string;
-  tokenExpiry?: Date;
-  lastSync?: Date;
+  connected_by?: string;
+  created_at: string;
+  updated_at: string;
   error?: string;
+  name?: string; // For UI purposes
 }
 
 export interface PlatformAuthConfig {
