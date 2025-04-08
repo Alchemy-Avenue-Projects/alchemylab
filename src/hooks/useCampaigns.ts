@@ -2,21 +2,25 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Campaign, AdAccount, Ad } from "@/types/database";
+import { Campaign, AdAccount, Ad, AdPlatform, CampaignStatus } from "@/types/database";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type CampaignWithAccount = Campaign & { ad_accounts: AdAccount };
+
+// Define filter types to match the expected types
+type PlatformFilter = AdPlatform | "all-platforms";
+type StatusFilter = CampaignStatus | "all-status";
 
 export const useCampaigns = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const organizationId = profile?.organization_id;
   
-  // Filters
+  // Filters with proper typing
   const [filters, setFilters] = useState({
-    platform: "all-platforms",
-    status: "all-status",
+    platform: "all-platforms" as PlatformFilter,
+    status: "all-status" as StatusFilter,
     search: ""
   });
 
@@ -32,11 +36,13 @@ export const useCampaigns = () => {
       
       // Apply filters
       if (filters.platform !== "all-platforms") {
-        query = query.eq("ad_accounts.platform", filters.platform);
+        // Cast to AdPlatform to satisfy TypeScript
+        query = query.eq("ad_accounts.platform", filters.platform as AdPlatform);
       }
       
       if (filters.status !== "all-status") {
-        query = query.eq("status", filters.status.toLowerCase());
+        // Cast to CampaignStatus to satisfy TypeScript
+        query = query.eq("status", filters.status.toLowerCase() as CampaignStatus);
       }
       
       if (filters.search) {
