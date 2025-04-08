@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .eq('id', session.user.id)
             .single();
             
-          setProfile(data);
+          setProfile(data as Profile);
         } else {
           setProfile(null);
         }
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .eq('id', session.user.id)
           .single()
           .then(({ data }) => {
-            setProfile(data);
+            setProfile(data as Profile);
             setIsLoading(false);
           });
       } else {
