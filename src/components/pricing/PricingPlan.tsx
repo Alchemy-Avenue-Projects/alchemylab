@@ -20,7 +20,7 @@ export interface PricingPlanProps {
   features: PlanFeature[];
   popular?: boolean;
   period: 'monthly' | 'annual';
-  onSelectPlan: (planId: string) => void;
+  onSelectPlan: () => void;
 }
 
 const PricingPlan: React.FC<PricingPlanProps> = ({
@@ -69,7 +69,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({
         <Button 
           className={`w-full ${popular ? 'alchemy-gradient' : ''}`}
           variant={popular ? 'default' : 'outline'}
-          onClick={() => onSelectPlan(id)}
+          onClick={onSelectPlan}
         >
           Choose {name}
         </Button>

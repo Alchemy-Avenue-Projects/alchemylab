@@ -17,31 +17,29 @@ export default function Pricing() {
   };
   
   return (
-    <>
-      <section className="py-20">
-        <div className="container">
-          <PricingHeader period={period} setPeriod={setPeriod} />
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {pricingPlans.map((plan) => (
-              <PricingPlan
-                key={plan.id}
-                id={plan.id}
-                name={plan.name}
-                description={plan.description}
-                price={plan.price}
-                features={plan.features}
-                popular={plan.popular}
-                period={period}
-                onSelectPlan={() => selectPlan(plan.id)}
-              />
-            ))}
-          </div>
-          
-          <EnterpriseContact />
-          <PricingFAQ />
+    <section className="py-20">
+      <div className="container">
+        <PricingHeader period={period} setPeriod={setPeriod} />
+        
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {pricingPlans.map((plan) => (
+            <PricingPlan
+              key={plan.id}
+              id={plan.id}
+              name={plan.name}
+              description={plan.description}
+              price={plan.price}
+              features={plan.features}
+              popular={plan.popular}
+              period={period}
+              onSelectPlan={() => selectPlan(plan.id)}
+            />
+          ))}
         </div>
-      </section>
-    </>
+        
+        <EnterpriseContact />
+        <PricingFAQ />
+      </div>
+    </section>
   );
 }
