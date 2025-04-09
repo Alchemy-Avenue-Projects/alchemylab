@@ -1,103 +1,106 @@
 
-import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { parseOAuthRedirect } from "@/services/platforms/oauth-utils";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { parseOAuthRedirect } from '@/services/platforms/oauth-utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 const OAuthCallback: React.FC = () => {
-  const [isProcessing, setIsProcessing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('Processing your connection...');
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [searchParams] = useSearchParams();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
       try {
-        const code = searchParams.get('code');
-        const state = searchParams.get('state');
-        const errorParam = searchParams.get('error');
-
-        if (errorParam) {
-          throw new Error(`Authentication error: ${errorParam}`);
+        const { code, state, error } = parseOAuthRedirect();
+        
+        if (error) {
+          setStatus('error');
+          setMessage(`Authentication error: ${error}`);
+          return;
         }
 
         if (!code || !state) {
-          throw new Error('Missing required parameters');
+          setStatus('error');
+          setMessage('Invalid callback parameters.');
+          return;
         }
 
-        // Exchange the code for tokens
-        const result = await supabase.functions.invoke('oauth-callback', {
+        if (!profile?.organization_id) {
+          setStatus('error');
+          setMessage('You need to be logged in to connect platforms.');
+          return;
+        }
+
+        // Exchange the code for an access token by calling our edge function
+        const { data, error: exchangeError } = await supabase.functions.invoke('oauth-callback', {
           body: {
             code,
-            state,
+            platform: state,
             redirectUri: `${window.location.origin}/oauth/callback`
           }
         });
 
-        if (result.error) {
-          throw new Error(result.error.message);
+        if (exchangeError) {
+          throw new Error(exchangeError.message);
         }
 
-        toast({
-          title: 'Connection Successful',
-          description: `Your ${state} account has been connected successfully.`
-        });
+        // Save the connection to the database
+        const { error: saveError } = await supabase
+          .from('platform_connections')
+          .insert({
+            platform: state,
+            organization_id: profile.organization_id,
+            auth_token: data.accessToken,
+            refresh_token: data.refreshToken,
+            token_expiry: data.expiresAt,
+            account_name: data.accountName || `${state.charAt(0).toUpperCase() + state.slice(1)} Account`,
+            account_id: data.accountId,
+            connected_by: profile.id,
+            connected: true
+          });
 
-        // Redirect back to integrations page
-        navigate('/app/settings');
-      } catch (err: any) {
-        console.error('OAuth callback error:', err);
-        setError(err.message || 'Failed to complete authentication');
-        toast({
-          title: 'Connection Failed',
-          description: err.message || 'Failed to complete authentication',
-          variant: 'destructive'
-        });
-      } finally {
-        setIsProcessing(false);
+        if (saveError) {
+          throw saveError;
+        }
+
+        setStatus('success');
+        setMessage(`Successfully connected to ${state}!`);
+        
+        // Redirect back to settings after a delay
+        setTimeout(() => {
+          navigate('/app/settings?tab=integrations');
+        }, 2000);
+      } catch (err) {
+        console.error('Error processing OAuth callback:', err);
+        setStatus('error');
+        setMessage('Failed to complete the connection process. Please try again.');
       }
     };
 
     handleOAuthCallback();
-  }, []);
-
-  // Automatically redirect after a delay if there's an error
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => {
-        navigate('/app/settings');
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [error, navigate]);
+  }, [navigate, profile]);
 
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-center p-4">
-      {isProcessing ? (
-        <>
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-semibold mb-2">Processing Authentication</h2>
-          <p className="text-muted-foreground">Please wait while we complete the connection...</p>
-        </>
-      ) : error ? (
-        <>
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-semibold mb-2">Authentication Failed</h2>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <p>Redirecting back to settings in a few seconds...</p>
-        </>
-      ) : (
-        <>
-          <div className="text-green-500 text-6xl mb-4">✓</div>
-          <h2 className="text-2xl font-semibold mb-2">Connection Successful</h2>
-          <p className="text-muted-foreground mb-4">Your account has been connected successfully.</p>
-          <p>Redirecting back to settings...</p>
-        </>
-      )}
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center">
+            {status === 'loading' ? 'Connecting Platform' : 
+             status === 'success' ? 'Connection Successful' : 'Connection Failed'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center p-6">
+          {status === 'loading' && (
+            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+          )}
+          <p className="text-center">{message}</p>
+        </CardContent>
+      </Card>
     </div>
   );
 };

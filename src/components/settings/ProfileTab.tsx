@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 
 const ProfileTab: React.FC = () => {
@@ -14,6 +15,7 @@ const ProfileTab: React.FC = () => {
     name: profile?.full_name || user?.user_metadata?.full_name || "",
     email: user?.email || "",
     company: profile?.company || "Marketing Agency",
+    companyType: "marketing_agency", // Default value
     role: profile?.job_title || "Marketing Director",
     bio: profile?.bio || ""
   });
@@ -23,6 +25,13 @@ const ProfileTab: React.FC = () => {
     setFormState(prev => ({
       ...prev,
       [id]: value
+    }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormState(prev => ({
+      ...prev,
+      companyType: value
     }));
   };
 
@@ -71,6 +80,21 @@ const ProfileTab: React.FC = () => {
               value={formState.company}
               onChange={handleInputChange}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="companyType">Company Type</Label>
+            <Select 
+              value={formState.companyType} 
+              onValueChange={handleSelectChange}
+            >
+              <SelectTrigger id="companyType">
+                <SelectValue placeholder="Select company type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="marketing_agency">Marketing Agency</SelectItem>
+                <SelectItem value="product_company">Product Company</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Job Title</Label>

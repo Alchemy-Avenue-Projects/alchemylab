@@ -5,7 +5,8 @@ import {
   CreditCard, 
   Lock, 
   Bell, 
-  Link
+  Link,
+  FileText
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileTab from "@/components/settings/ProfileTab";
@@ -13,6 +14,7 @@ import IntegrationsTab from "@/components/settings/IntegrationsTab";
 import BillingTab from "@/components/settings/BillingTab";
 import NotificationsTab from "@/components/settings/NotificationsTab";
 import SecurityTab from "@/components/settings/SecurityTab";
+import CompanyBriefTab from "@/components/settings/CompanyBriefTab";
 
 const Settings: React.FC = () => {
   return (
@@ -30,6 +32,10 @@ const Settings: React.FC = () => {
           <TabsTrigger value="integrations">
             <Link className="h-4 w-4 mr-2" />
             Integrations
+          </TabsTrigger>
+          <TabsTrigger value="company-brief">
+            <FileText className="h-4 w-4 mr-2" />
+            Company Brief
           </TabsTrigger>
           <TabsTrigger value="billing">
             <CreditCard className="h-4 w-4 mr-2" />
@@ -51,6 +57,10 @@ const Settings: React.FC = () => {
         
         <TabsContent value="integrations" className="space-y-4 animate-fade-in">
           <IntegrationsTab />
+        </TabsContent>
+        
+        <TabsContent value="company-brief" className="space-y-4 animate-fade-in">
+          <CompanyBriefTab />
         </TabsContent>
         
         <TabsContent value="billing" className="space-y-4 animate-fade-in">
