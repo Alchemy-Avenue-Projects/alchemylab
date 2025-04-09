@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,8 +20,12 @@ export const useProductBriefService = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchProductBriefs = async () => {
-    if (!user) return;
+  const fetchProductBriefs = useCallback(async () => {
+    if (!user) {
+      console.log("No user found, cannot fetch product briefs");
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -33,7 +36,7 @@ export const useProductBriefService = () => {
         .from('product_briefs')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false }) as { data: ProductBrief[] | null, error: any };
+        .order('created_at', { ascending: false });
         
       if (error) {
         console.error("Error fetching product briefs:", error);
@@ -49,7 +52,7 @@ export const useProductBriefService = () => {
             const { data: accounts, error: accountsError } = await supabase
               .from('product_brief_accounts')
               .select('ad_account_id')
-              .eq('product_brief_id', brief.id) as { data: { ad_account_id: string }[] | null, error: any };
+              .eq('product_brief_id', brief.id);
               
             if (accountsError) {
               console.error("Error fetching accounts for brief:", brief.id, accountsError);
@@ -96,18 +99,22 @@ export const useProductBriefService = () => {
         selectedAccounts: []
       }]);
     } finally {
+      // Always ensure loading state is set to false
+      console.log("Setting isLoading to false after fetch operation");
       setIsLoading(false);
     }
-  };
+  }, [user, toast]);
 
+  // Use immediate loading state management
   useEffect(() => {
+    console.log("Auth state changed, user:", user?.id);
     if (user) {
       fetchProductBriefs();
     } else {
       // If no user, exit loading state to avoid infinite spinner
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, fetchProductBriefs]);
 
   const handleAddProduct = () => {
     setProducts([
@@ -200,7 +207,7 @@ export const useProductBriefService = () => {
               target_audience: product.targetAudience,
               target_locations: product.targetLocations
             })
-            .eq('id', productId) as { error: any };
+            .eq('id', productId);
             
           if (error) throw error;
         } else {
@@ -214,7 +221,7 @@ export const useProductBriefService = () => {
               target_audience: product.targetAudience,
               target_locations: product.targetLocations
             })
-            .select() as { data: ProductBrief[] | null, error: any };
+            .select();
             
           if (error) throw error;
           if (data) productId = data[0].id;
@@ -225,7 +232,7 @@ export const useProductBriefService = () => {
           const { error } = await supabase
             .from('product_brief_accounts')
             .delete()
-            .eq('product_brief_id', productId) as { error: any };
+            .eq('product_brief_id', productId);
             
           if (error) throw error;
           
@@ -238,7 +245,7 @@ export const useProductBriefService = () => {
             
             const { error: insertError } = await supabase
               .from('product_brief_accounts')
-              .insert(accountMappings) as { error: any };
+              .insert(accountMappings);
               
             if (insertError) throw insertError;
           }
