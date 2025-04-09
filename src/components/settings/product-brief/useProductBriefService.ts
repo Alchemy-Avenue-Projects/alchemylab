@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -100,7 +101,12 @@ export const useProductBriefService = () => {
   };
 
   useEffect(() => {
-    fetchProductBriefs();
+    if (user) {
+      fetchProductBriefs();
+    } else {
+      // If no user, exit loading state to avoid infinite spinner
+      setIsLoading(false);
+    }
   }, [user]);
 
   const handleAddProduct = () => {
