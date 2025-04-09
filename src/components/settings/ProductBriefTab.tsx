@@ -5,6 +5,7 @@ import { PlusCircle, Save, Loader2 } from "lucide-react";
 import { usePlatforms } from "@/contexts/PlatformsContext";
 import ProductBriefForm from "./product-brief/ProductBriefForm";
 import { useProductBriefService } from "./product-brief/useProductBriefService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ProductBriefTab: React.FC = () => {
   const { connections } = usePlatforms();
@@ -22,9 +23,13 @@ const ProductBriefTab: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-10">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        <span className="ml-2 text-lg">Loading product briefs...</span>
+      <div className="space-y-6">
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <span className="ml-2 text-lg">Loading product briefs...</span>
+        </div>
       </div>
     );
   }

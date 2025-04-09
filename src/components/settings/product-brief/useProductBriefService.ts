@@ -25,13 +25,21 @@ export const useProductBriefService = () => {
     
     setIsLoading(true);
     try {
+      console.log("Fetching product briefs for user:", user.id);
+      
       // Using a type assertion to match our custom types
       const { data: productBriefs, error } = await supabase
         .from('product_briefs')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false }) as { data: ProductBrief[] | null, error: any };
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching product briefs:", error);
+        throw error;
+      }
+      
+      console.log("Product briefs fetched:", productBriefs);
       
       if (productBriefs && productBriefs.length > 0) {
         // For each product brief, get its associated accounts
@@ -42,7 +50,10 @@ export const useProductBriefService = () => {
               .select('ad_account_id')
               .eq('product_brief_id', brief.id) as { data: { ad_account_id: string }[] | null, error: any };
               
-            if (accountsError) throw accountsError;
+            if (accountsError) {
+              console.error("Error fetching accounts for brief:", brief.id, accountsError);
+              throw accountsError;
+            }
             
             return {
               id: brief.id,
@@ -55,9 +66,11 @@ export const useProductBriefService = () => {
           })
         );
         
+        console.log("Products with accounts:", productsWithAccounts);
         setProducts(productsWithAccounts);
       } else if (productBriefs && productBriefs.length === 0) {
         // If no briefs found, keep default empty brief
+        console.log("No product briefs found, using default empty brief");
         setProducts([{
           name: '',
           description: '',
@@ -73,6 +86,14 @@ export const useProductBriefService = () => {
         description: "Failed to load product briefs.",
         variant: "destructive"
       });
+      // Set default state even if there's an error
+      setProducts([{
+        name: '',
+        description: '',
+        targetAudience: '',
+        targetLocations: '',
+        selectedAccounts: []
+      }]);
     } finally {
       setIsLoading(false);
     }
