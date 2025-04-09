@@ -6,9 +6,6 @@ import { AiSuggestion, Ad, SuggestionType } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Define a more specific type for our suggestion types that matches the database
-type AdSuggestionType = "copy_change" | "asset_swap" | "fatigue_alert" | "localization";
-
 export const useAISuggestions = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -118,7 +115,7 @@ export const useAISuggestions = () => {
   });
 
   // Generate new suggestion
-  const generateSuggestion = async (adId: string, suggestionType: AdSuggestionType) => {
+  const generateSuggestion = async (adId: string, suggestionType: SuggestionType) => {
     if (!profile?.id || !adId) return null;
     
     try {

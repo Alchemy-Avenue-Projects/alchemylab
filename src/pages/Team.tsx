@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Card,
@@ -59,6 +58,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/roles";
 
 const Team: React.FC = () => {
   const { teamMembers, isLoading, error, updateRole, isUpdating, inviteUser, isInviting } = useTeam();
@@ -66,10 +66,10 @@ const Team: React.FC = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState('');
-  const [newRole, setNewRole] = useState('viewer');
+  const [newRole, setNewRole] = useState<UserRole>('viewer');
 
   const handleInviteUser = async () => {
-    await inviteUser(newEmail, newRole);
+    await inviteUser({ email: newEmail, role: newRole });
     setNewEmail('');
     setNewRole('viewer');
     setInviteDialogOpen(false);
@@ -136,7 +136,10 @@ const Team: React.FC = () => {
                   <label htmlFor="role" className="text-right">
                     Role
                   </label>
-                  <Select value={newRole} onValueChange={setNewRole}>
+                  <Select 
+                    value={newRole} 
+                    onValueChange={(value) => setNewRole(value as UserRole)}
+                  >
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>

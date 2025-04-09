@@ -9,14 +9,14 @@ import { Link } from "react-router-dom";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 const DashboardAlerts: React.FC = () => {
-  const { data, isLoading } = useDashboardData();
+  const dashboardData = useDashboardData();
   
-  if (isLoading || !data) {
+  if (dashboardData.isLoading || !dashboardData.activeCampaigns) {
     return null;
   }
   
   // If there are no alerts to show
-  if (!data.lowCtrCampaigns?.length && !data.staleAccounts?.length) {
+  if (!dashboardData.alerts.lowCtrCampaigns?.length && !dashboardData.alerts.staleAccounts?.length) {
     return null;
   }
   
@@ -32,11 +32,11 @@ const DashboardAlerts: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {data.lowCtrCampaigns && data.lowCtrCampaigns.length > 0 && (
+        {dashboardData.alerts.lowCtrCampaigns && dashboardData.alerts.lowCtrCampaigns.length > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-2">Low-Performing Campaigns</h4>
             <div className="space-y-2">
-              {data.lowCtrCampaigns.map((snapshot) => (
+              {dashboardData.alerts.lowCtrCampaigns.map((snapshot) => (
                 <div key={snapshot.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                   <div>
                     <p className="font-medium">{snapshot.campaigns?.name || "Unknown Campaign"}</p>
@@ -59,11 +59,11 @@ const DashboardAlerts: React.FC = () => {
           </div>
         )}
         
-        {data.staleAccounts && data.staleAccounts.length > 0 && (
+        {dashboardData.alerts.staleAccounts && dashboardData.alerts.staleAccounts.length > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-2">Accounts Needing Reconnection</h4>
             <div className="space-y-2">
-              {data.staleAccounts.map((account) => (
+              {dashboardData.alerts.staleAccounts.map((account) => (
                 <div key={account.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                   <div>
                     <p className="font-medium">{account.account_name}</p>

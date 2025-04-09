@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { CheckCircle, XCircle, MessageSquare, AlertCircle, Lightbulb } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SuggestionType } from "@/types/database";
 
 export const AISuggestionsList: React.FC = () => {
   const { 
@@ -81,7 +82,7 @@ export const AISuggestionsList: React.FC = () => {
           onClick={() => {
             if (suggestions.length > 0) {
               // Use the first ad as an example
-              generateSuggestion(suggestions[0].ad_id, "copy_change");
+              generateSuggestion(suggestions[0].ad_id, "copy_change" as SuggestionType);
             }
           }}
           disabled={isGenerating || suggestions.length === 0}
