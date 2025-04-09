@@ -11,6 +11,9 @@ export type TeamMember = Profile & {
   isCurrentUser: boolean;
 };
 
+// Type for roles that must match the database enum
+type UserRole = "admin" | "editor" | "viewer";
+
 export const useTeam = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -45,7 +48,7 @@ export const useTeam = () => {
 
   // Update user role mutation
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRole }) => {
       // Ensure we're not updating our own role if we're not an admin
       if (userId === currentUserProfile?.id && currentUserProfile?.role !== "admin") {
         throw new Error("You cannot change your own role");
@@ -79,7 +82,7 @@ export const useTeam = () => {
   });
 
   // Mock invite function (in a real app, this would send an email)
-  const inviteUser = async (email: string, role: string) => {
+  const inviteUser = async (email: string, role: UserRole) => {
     if (!currentUserProfile?.organization_id) {
       toast({
         title: "Error",

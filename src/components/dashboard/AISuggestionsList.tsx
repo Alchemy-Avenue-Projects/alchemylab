@@ -81,7 +81,7 @@ export const AISuggestionsList: React.FC = () => {
           onClick={() => {
             if (suggestions.length > 0) {
               // Use the first ad as an example
-              generateSuggestion(suggestions[0].ad_id, "headline");
+              generateSuggestion(suggestions[0].ad_id, "copy_change");
             }
           }}
           disabled={isGenerating || suggestions.length === 0}
@@ -122,7 +122,7 @@ export const AISuggestionsList: React.FC = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-lg">
-                      {suggestion.suggestion_type === "headline" ? "Headline Suggestion" : "Ad Copy Suggestion"}
+                      {suggestion.suggestion_type === "copy_change" ? "Headline Suggestion" : "Ad Copy Suggestion"}
                     </CardTitle>
                     <CardDescription>
                       {format(new Date(suggestion.created_at), "MMM d, yyyy")}

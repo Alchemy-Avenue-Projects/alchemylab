@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AiLearning } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
+import { InsightScope, InsightType } from "@/types/database";
 
 type AILearningsFilters = {
   scope: string;
@@ -22,12 +23,14 @@ export const useAILearnings = () => {
     
     // Apply scope filter
     if (filters.scope !== "all") {
-      query = query.eq("scope", filters.scope);
+      // Type-cast the scope string to the expected enum type
+      query = query.eq("scope", filters.scope as InsightScope);
     }
     
     // Apply insight type filter
     if (filters.insightType !== "all") {
-      query = query.eq("insight_type", filters.insightType);
+      // Type-cast the insight_type string to the expected enum type  
+      query = query.eq("insight_type", filters.insightType as InsightType);
     }
     
     // Filter by client_id (organization_id)

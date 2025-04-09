@@ -2,9 +2,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AiSuggestion, Ad } from "@/types/database";
+import { AiSuggestion, Ad, SuggestionType } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Define a more specific type for our suggestion types that matches the database
+type AdSuggestionType = "copy_change" | "asset_swap" | "fatigue_alert" | "localization";
 
 export const useAISuggestions = () => {
   const queryClient = useQueryClient();
@@ -37,12 +40,12 @@ export const useAISuggestions = () => {
   const acceptMutation = useMutation({
     mutationFn: async (suggestion: AiSuggestion) => {
       // First, update the ad with the suggested text
-      if (suggestion.suggestion_type === "headline") {
+      if (suggestion.suggestion_type === "copy_change") {
         await supabase
           .from("ads")
           .update({ headline: suggestion.suggested_text })
           .eq("id", suggestion.ad_id);
-      } else if (suggestion.suggestion_type === "body") {
+      } else if (suggestion.suggestion_type === "asset_swap") {
         await supabase
           .from("ads")
           .update({ body_text: suggestion.suggested_text })
@@ -115,7 +118,7 @@ export const useAISuggestions = () => {
   });
 
   // Generate new suggestion
-  const generateSuggestion = async (adId: string, suggestionType: "headline" | "body") => {
+  const generateSuggestion = async (adId: string, suggestionType: AdSuggestionType) => {
     if (!profile?.id || !adId) return null;
     
     try {
@@ -123,9 +126,9 @@ export const useAISuggestions = () => {
       
       // For a real implementation, we would call an OpenAI edge function here
       // This is a mock implementation that creates a placeholder suggestion
-      const suggestedText = suggestionType === "headline" 
-        ? `Improved ${suggestionType}: Try our amazing product today!` 
-        : `This is an AI-generated ${suggestionType} text suggestion that would typically come from OpenAI. It's designed to improve your ad performance based on analytics data.`;
+      const suggestedText = suggestionType === "copy_change" 
+        ? `Improved headline: Try our amazing product today!` 
+        : `This is an AI-generated suggestion that would typically come from OpenAI. It's designed to improve your ad performance based on analytics data.`;
       
       const reason = "Based on analytics, this suggestion might improve engagement rates.";
       

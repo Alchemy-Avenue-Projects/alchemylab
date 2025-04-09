@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AnalyticsSnapshot } from "@/types/database";
+import { AnalyticsSnapshot, AdPlatform } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type DateRange = {
@@ -55,7 +55,8 @@ export const useAnalytics = () => {
         
         // Apply platform filter if selected
         if (filters.platform !== "all-platforms") {
-          query = query.eq("platform", filters.platform);
+          // Type-cast the platform string to AdPlatform type
+          query = query.eq("platform", filters.platform as AdPlatform);
         }
         
         // Apply campaign filter if selected

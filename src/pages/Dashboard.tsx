@@ -1,14 +1,17 @@
+
 import React from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DashboardAlerts } from "@/components/dashboard/DashboardAlerts";
-import { PerformanceOverview } from "@/components/dashboard/PerformanceOverview";
-import { RecentCampaigns } from "@/components/dashboard/RecentCampaigns";
-import { TopPerformers } from "@/components/dashboard/TopPerformers";
-import { UpcomingTasks } from "@/components/dashboard/UpcomingTasks";
-import { QuickActions } from "@/components/dashboard/QuickActions";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import AISuggestionsList from "@/components/dashboard/AISuggestionsList";
+import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
+import { AISuggestionsList } from "@/components/dashboard/AISuggestionsList";
+
+// Temporary placeholder component
+const PlaceholderCard = ({ title }: { title: string }) => (
+  <div className="rounded-lg border bg-card p-4">
+    <h3 className="text-lg font-medium mb-2">{title}</h3>
+    <p className="text-muted-foreground">This component will be implemented soon.</p>
+  </div>
+);
 
 const Dashboard: React.FC = () => {
   return (
@@ -27,16 +30,16 @@ const Dashboard: React.FC = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <PerformanceOverview />
-          <RecentCampaigns />
-          <TopPerformers />
+          <PlaceholderCard title="Performance Overview" />
+          <PlaceholderCard title="Recent Campaigns" />
+          <PlaceholderCard title="Top Performers" />
         </div>
 
         <div className="space-y-6">
           <AISuggestionsList />
-          <UpcomingTasks />
-          <QuickActions />
-          <RecentActivity />
+          <PlaceholderCard title="Upcoming Tasks" />
+          <PlaceholderCard title="Quick Actions" />
+          <PlaceholderCard title="Recent Activity" />
         </div>
       </div>
     </div>
