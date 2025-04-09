@@ -1,19 +1,17 @@
 
-import React from "react";
-import { 
-  Plus, 
-  Mail, 
-  MoreHorizontal, 
-  Pencil, 
-  Trash, 
-  UserCog,
-  ShieldCheck
-} from "lucide-react";
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTeam } from "@/hooks/useTeam";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -23,6 +21,34 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  User,
+  UserPlus,
+  Shield,
+  Edit,
+  Star,
+  Eye,
+  MoreHorizontal,
+  Check,
+  Mail
+} from "lucide-react";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -30,201 +56,187 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: "Admin" | "Editor" | "Viewer";
-  status: "Active" | "Invited" | "Inactive";
-  avatarUrl?: string;
-  lastActive: string;
-}
-
-const teamMembers: TeamMember[] = [
-  {
-    id: "1",
-    name: "Jane Doe",
-    email: "jane.doe@example.com",
-    role: "Admin",
-    status: "Active",
-    lastActive: "Now"
-  },
-  {
-    id: "2",
-    name: "John Smith",
-    email: "john.smith@example.com",
-    role: "Editor",
-    status: "Active",
-    lastActive: "2 hours ago"
-  },
-  {
-    id: "3",
-    name: "Emily Johnson",
-    email: "emily.johnson@example.com",
-    role: "Viewer",
-    status: "Active",
-    lastActive: "Yesterday"
-  },
-  {
-    id: "4",
-    name: "Michael Brown",
-    email: "michael.brown@example.com",
-    role: "Editor",
-    status: "Invited",
-    lastActive: "Never"
-  },
-  {
-    id: "5",
-    name: "Sarah Wilson",
-    email: "sarah.wilson@example.com",
-    role: "Viewer",
-    status: "Inactive",
-    lastActive: "2 weeks ago"
-  }
-];
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Team: React.FC = () => {
+  const { teamMembers, isLoading, error, updateRole, isUpdating, inviteUser, isInviting } = useTeam();
+  const { profile: currentUserProfile } = useAuth();
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState('viewer');
+
+  const handleInviteUser = async () => {
+    await inviteUser(newEmail, newRole);
+    setNewEmail('');
+    setNewRole('viewer');
+    setInviteDialogOpen(false);
+  };
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Badge className="bg-red-500">{role}</Badge>;
+      case 'editor':
+        return <Badge className="bg-blue-500">{role}</Badge>;
+      default:
+        return <Badge className="bg-gray-500">{role}</Badge>;
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Shield className="h-4 w-4 text-red-500" />;
+      case 'editor':
+        return <Edit className="h-4 w-4 text-blue-500" />;
+      default:
+        return <Eye className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const isAdmin = currentUserProfile?.role === 'admin';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-semibold">Team Management</h1>
-        <div className="flex items-center space-x-2">
-          <Button className="alchemy-gradient">
-            <Plus className="h-4 w-4 mr-2" />
-            Invite Team Member
-          </Button>
-        </div>
+        <h1 className="text-3xl font-semibold">Team</h1>
+        {isAdmin && (
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="alchemy-gradient">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Invite Team Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite Team Member</DialogTitle>
+                <DialogDescription>
+                  Invite a new member to join your organization.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="email" className="text-right">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="colleague@example.com"
+                    className="col-span-3"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="role" className="text-right">
+                    Role
+                  </label>
+                  <Select value={newRole} onValueChange={setNewRole}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="editor">Editor</SelectItem>
+                      <SelectItem value="viewer">Viewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button 
+                  onClick={handleInviteUser} 
+                  disabled={!newEmail || isInviting}
+                >
+                  {isInviting ? (
+                    <>
+                      <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      Inviting...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Send Invite
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
-      
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Team Overview</CardTitle>
-            <CardDescription>
-              Your team and user role assignments.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Members</CardTitle>
+          <CardDescription>
+            Manage your organization's team members and their roles.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Total team members:</span>
-                <span className="font-medium">5</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Active members:</span>
-                <span className="font-medium">3</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Pending invitations:</span>
-                <span className="font-medium">1</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Inactive members:</span>
-                <span className="font-medium">1</span>
-              </div>
-              <div className="pt-2">
-                <div className="text-sm font-medium mb-2">Team roles:</div>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <div className="h-2 w-2 rounded-full bg-alchemy-600 mr-2"></div>
-                    <span className="text-sm">Admin: 1</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
-                    <span className="text-sm">Editor: 2</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="h-2 w-2 rounded-full bg-gray-400 mr-2"></div>
-                    <span className="text-sm">Viewer: 2</span>
+              {Array(4).fill(0).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle>All Team Members</CardTitle>
-            <CardDescription>
-              Manage your team members and their roles.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center mb-4">
-              <div className="relative flex-1">
-                <Input
-                  placeholder="Search team members..."
-                  className="pl-8"
-                />
-                <div className="absolute left-2.5 top-2.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.3-4.3"></path>
-                  </svg>
-                </div>
-              </div>
+          ) : error ? (
+            <div className="text-center py-4">
+              <p className="text-red-500">Error loading team members</p>
+              <Button className="mt-2">Retry</Button>
             </div>
-            
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Active</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teamMembers.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={member.avatarUrl} />
-                            <AvatarFallback className={
-                              member.role === "Admin" 
-                                ? "bg-alchemy-600 text-white" 
-                                : member.role === "Editor" 
-                                  ? "bg-blue-500 text-white" 
-                                  : "bg-gray-400 text-white"
-                            }>
-                              {member.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{member.name}</div>
-                            <div className="text-sm text-muted-foreground">{member.email}</div>
-                          </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {teamMembers.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center space-x-2">
+                        <div className="bg-muted flex items-center justify-center h-8 w-8 rounded-full">
+                          <User className="h-4 w-4" />
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          className={
-                            member.role === "Admin" 
-                              ? "text-alchemy-600 border-alchemy-200 bg-alchemy-50 dark:bg-alchemy-900/20"
-                              : member.role === "Editor" 
-                                ? "text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20"
-                                : ""
-                          }
-                        >
-                          {member.role === "Admin" && <ShieldCheck className="h-3 w-3 mr-1" />}
-                          {member.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={member.status === "Active" ? "outline" : "secondary"}
-                          className={member.status === "Active" ? "text-green-500 border-green-200" : ""}
-                        >
-                          {member.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{member.lastActive}</TableCell>
+                        <span>
+                          {member.full_name || 'Unnamed User'}
+                          {member.isCurrentUser && (
+                            <span className="ml-2 text-xs text-muted-foreground">(you)</span>
+                          )}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{member.email}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        {getRoleIcon(member.role)}
+                        <span className="capitalize">{member.role}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(member.created_at), "MMM d, yyyy")}
+                    </TableCell>
+                    {isAdmin && (
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -234,34 +246,39 @@ const Team: React.FC = () => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
-                              <Mail className="h-4 w-4 mr-2" />
-                              Send Email
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <UserCog className="h-4 w-4 mr-2" />
-                              Change Role
-                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash className="h-4 w-4 mr-2" />
-                              Remove
+                            <DropdownMenuItem
+                              onClick={() => updateRole({ userId: member.id, newRole: "admin" })}
+                              disabled={member.role === "admin" || isUpdating}
+                            >
+                              <Shield className="h-4 w-4 mr-2" />
+                              Make Admin
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => updateRole({ userId: member.id, newRole: "editor" })}
+                              disabled={member.role === "editor" || isUpdating}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Make Editor
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => updateRole({ userId: member.id, newRole: "viewer" })}
+                              disabled={member.role === "viewer" || isUpdating}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Make Viewer
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

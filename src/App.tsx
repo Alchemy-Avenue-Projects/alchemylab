@@ -1,129 +1,103 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import React from 'react';
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
+import Index from "@/pages/Index";
+import Features from "@/pages/Features";
+import Pricing from "@/pages/Pricing";
+import Auth from "@/pages/Auth";
+import OAuthCallback from "@/pages/OAuthCallback";
 import AppLayout from "@/components/layout/AppLayout";
-import NotFound from "@/pages/NotFound";
 import Dashboard from "@/pages/Dashboard";
+import NotFound from "@/pages/NotFound";
 import Campaigns from "@/pages/Campaigns";
 import Analytics from "@/pages/Analytics";
 import AIInsights from "@/pages/AIInsights";
-import Media from "@/pages/Media";
 import Creator from "@/pages/Creator";
+import Media from "@/pages/Media";
 import Notifications from "@/pages/Notifications";
 import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { NotificationProvider } from "@/contexts/NotificationContext";
-import { PlatformsProvider } from "@/contexts/PlatformsContext";
+import AnalyticsData from './pages/AnalyticsData';
 
-// Marketing website pages
-import LandingLayout from "@/components/layout/LandingLayout";
-import Homepage from "@/pages/Homepage";
-import Pricing from "@/pages/Pricing";
-import Features from "@/pages/Features";
-import Auth from "@/pages/Auth";
-import OAuthCallback from "@/pages/OAuthCallback";
-import { useAuth } from "@/contexts/AuthContext";
-
-const queryClient = new QueryClient();
-
-// Route guard for authenticated routes
-function RequireAuth({ children }: { children: JSX.Element }) {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return <div className="h-screen w-full flex items-center justify-center">Loading...</div>;
+// Update the routes section to include our new analytics data page
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Index />,
+    errorElement: <NotFound />
+  },
+  {
+    path: "/features",
+    element: <Features />
+  },
+  {
+    path: "/pricing",
+    element: <Pricing />
+  },
+  {
+    path: "/auth",
+    element: <Auth />
+  },
+  {
+    path: "/auth/callback",
+    element: <OAuthCallback />
+  },
+  {
+    path: "/app",
+    element: <AppLayout />,
+    children: [
+      {
+        index: true,
+        element: <Dashboard />
+      },
+      {
+        path: "campaigns",
+        element: <Campaigns />
+      },
+      {
+        path: "analytics",
+        element: <Analytics />
+      },
+      {
+        path: "analytics-data",
+        element: <AnalyticsData />
+      },
+      {
+        path: "ai-insights",
+        element: <AIInsights />
+      },
+      {
+        path: "creator",
+        element: <Creator />
+      },
+      {
+        path: "media",
+        element: <Media />
+      },
+      {
+        path: "notifications",
+        element: <Notifications />
+      },
+      {
+        path: "team",
+        element: <Team />
+      },
+      {
+        path: "settings",
+        element: <Settings />
+      }
+    ]
   }
-  
-  // For development purposes, comment this out if you want to bypass authentication
-  // return children;
-  
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return children;
-}
+]);
 
-// Redirect authenticated users away from public routes
-function RedirectIfAuthenticated({ children }: { children: JSX.Element }) {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return <div className="h-screen w-full flex items-center justify-center">Loading...</div>;
-  }
-  
-  if (user) {
-    return <Navigate to="/app" replace />;
-  }
-  
-  return children;
-}
-
-function AppRoutes() {
+function App() {
   return (
-    <Routes>
-      {/* Marketing Pages wrapped with LandingLayout */}
-      <Route element={
-        <RedirectIfAuthenticated>
-          <LandingLayout>
-            <Outlet />
-          </LandingLayout>
-        </RedirectIfAuthenticated>
-      }>
-        <Route path="/" element={<Homepage />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/features" element={<Features />} />
-      </Route>
-      
-      <Route path="/auth" element={
-        <RedirectIfAuthenticated>
-          <Auth />
-        </RedirectIfAuthenticated>
-      } />
-      
-      {/* OAuth Callback Route */}
-      <Route path="/oauth/callback" element={<OAuthCallback />} />
-      
-      {/* For development purposes: allow direct access to app pages without authentication */}
-      {/* App Pages - With Relaxed Authentication for Development */}
-      <Route path="/app" element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="campaigns" element={<Campaigns />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="ai-insights" element={<AIInsights />} />
-        <Route path="media" element={<Media />} />
-        <Route path="creator" element={<Creator />} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="team" element={<Team />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-      
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <React.StrictMode>
+      <RouterProvider router={router} />
+    </React.StrictMode>
   );
 }
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <PlatformsProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </PlatformsProvider>
-        </NotificationProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
 
 export default App;

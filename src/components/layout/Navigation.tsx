@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
   },
   {
     title: "Analytics",
-    href: "/app/analytics",
+    href: "/app/analytics-data",
     icon: <BarChart2 className="h-5 w-5" />,
   },
   {
