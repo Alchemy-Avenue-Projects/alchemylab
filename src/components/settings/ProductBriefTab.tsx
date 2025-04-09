@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,9 @@ import { usePlatforms } from "@/contexts/PlatformsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { ProductBrief, ProductBriefAccount } from "@/types/database";
 
-type ProductBrief = {
+type ProductBriefFormData = {
   id?: string;
   name: string;
   description: string;
@@ -26,7 +28,7 @@ const ProductBriefTab: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const [products, setProducts] = useState<ProductBrief[]>([
+  const [products, setProducts] = useState<ProductBriefFormData[]>([
     {
       name: '',
       description: '',
@@ -45,10 +47,11 @@ const ProductBriefTab: React.FC = () => {
       
       setIsLoading(true);
       try {
+        // Using any as a workaround since the types in the Supabase client don't match our custom types
         const { data: productBriefs, error } = await supabase
           .from('product_briefs')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }) as { data: ProductBrief[] | null, error: any };
           
         if (error) throw error;
         
@@ -59,7 +62,7 @@ const ProductBriefTab: React.FC = () => {
               const { data: accounts, error: accountsError } = await supabase
                 .from('product_brief_accounts')
                 .select('ad_account_id')
-                .eq('product_brief_id', brief.id);
+                .eq('product_brief_id', brief.id) as { data: { ad_account_id: string }[] | null, error: any };
                 
               if (accountsError) throw accountsError;
               
@@ -191,7 +194,7 @@ const ProductBriefTab: React.FC = () => {
               target_audience: product.targetAudience,
               target_locations: product.targetLocations
             })
-            .eq('id', productId);
+            .eq('id', productId) as { error: any };
             
           if (error) throw error;
         } else {
@@ -205,10 +208,10 @@ const ProductBriefTab: React.FC = () => {
               target_audience: product.targetAudience,
               target_locations: product.targetLocations
             })
-            .select();
+            .select() as { data: ProductBrief[] | null, error: any };
             
           if (error) throw error;
-          productId = data[0].id;
+          if (data) productId = data[0].id;
         }
         
         // Remove all existing account associations for this product
@@ -216,7 +219,7 @@ const ProductBriefTab: React.FC = () => {
           const { error } = await supabase
             .from('product_brief_accounts')
             .delete()
-            .eq('product_brief_id', productId);
+            .eq('product_brief_id', productId) as { error: any };
             
           if (error) throw error;
           
@@ -229,7 +232,7 @@ const ProductBriefTab: React.FC = () => {
             
             const { error: insertError } = await supabase
               .from('product_brief_accounts')
-              .insert(accountMappings);
+              .insert(accountMappings) as { error: any };
               
             if (insertError) throw insertError;
           }
@@ -245,7 +248,7 @@ const ProductBriefTab: React.FC = () => {
       const { data: refreshedBriefs, error } = await supabase
         .from('product_briefs')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: ProductBrief[] | null, error: any };
         
       if (error) throw error;
       
@@ -255,7 +258,7 @@ const ProductBriefTab: React.FC = () => {
             const { data: accounts, error: accountsError } = await supabase
               .from('product_brief_accounts')
               .select('ad_account_id')
-              .eq('product_brief_id', brief.id);
+              .eq('product_brief_id', brief.id) as { data: { ad_account_id: string }[] | null, error: any };
               
             if (accountsError) throw accountsError;
             

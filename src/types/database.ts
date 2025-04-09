@@ -13,8 +13,25 @@ export type Asset = Database["public"]["Tables"]["assets"]["Row"];
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Client = Database["public"]["Tables"]["clients"]["Row"];
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
-export type ProductBrief = Database["public"]["Tables"]["product_briefs"]["Row"];
-export type ProductBriefAccount = Database["public"]["Tables"]["product_brief_accounts"]["Row"];
+
+// New type definitions for product briefs
+export type ProductBrief = {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  target_audience: string | null;
+  target_locations: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProductBriefAccount = {
+  id: string;
+  product_brief_id: string;
+  ad_account_id: string;
+  created_at: string;
+};
 
 // Base Profile type from database
 export type ProfileBase = Database["public"]["Tables"]["profiles"]["Row"];
