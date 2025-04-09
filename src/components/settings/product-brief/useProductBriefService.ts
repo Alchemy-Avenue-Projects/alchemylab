@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,13 +18,15 @@ export const useProductBriefService = () => {
       selectedAccounts: []
     }
   ]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   const fetchProductBriefs = useCallback(async () => {
     if (!user) {
       console.log("No user found, cannot fetch product briefs");
       setIsLoading(false);
+      setHasAttemptedFetch(true);
       return;
     }
     
@@ -31,7 +34,6 @@ export const useProductBriefService = () => {
     try {
       console.log("Fetching product briefs for user:", user.id);
       
-      // Using a type assertion to match our custom types
       const { data: productBriefs, error } = await supabase
         .from('product_briefs')
         .select('*')
@@ -72,8 +74,8 @@ export const useProductBriefService = () => {
         
         console.log("Products with accounts:", productsWithAccounts);
         setProducts(productsWithAccounts);
-      } else if (productBriefs && productBriefs.length === 0) {
-        // If no briefs found, keep default empty brief
+      } else {
+        // If no briefs found, use the default empty brief template
         console.log("No product briefs found, using default empty brief");
         setProducts([{
           name: '',
@@ -102,6 +104,7 @@ export const useProductBriefService = () => {
       // Always ensure loading state is set to false
       console.log("Setting isLoading to false after fetch operation");
       setIsLoading(false);
+      setHasAttemptedFetch(true);
     }
   }, [user, toast]);
 
@@ -113,6 +116,7 @@ export const useProductBriefService = () => {
     } else {
       // If no user, exit loading state to avoid infinite spinner
       setIsLoading(false);
+      setHasAttemptedFetch(true);
     }
   }, [user, fetchProductBriefs]);
 
@@ -276,6 +280,7 @@ export const useProductBriefService = () => {
     products,
     isLoading,
     isSaving,
+    hasAttemptedFetch,
     handleAddProduct,
     handleRemoveProduct,
     handleInputChange,

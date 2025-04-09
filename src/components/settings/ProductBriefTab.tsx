@@ -17,6 +17,7 @@ const ProductBriefTab: React.FC = () => {
     products,
     isLoading,
     isSaving,
+    hasAttemptedFetch,
     handleAddProduct,
     handleRemoveProduct,
     handleInputChange,
@@ -44,10 +45,11 @@ const ProductBriefTab: React.FC = () => {
     }
   }, [isLoading]);
 
-  // Force-show content if loading gets stuck
-  const showFallbackContent = loadingTimedOut || !isLoading;
+  // Force-show content if loading gets stuck or when we've attempted a fetch
+  const showContent = !isLoading || loadingTimedOut || hasAttemptedFetch;
 
-  if (isLoading && !loadingTimedOut) {
+  // Initial loading state with skeleton
+  if (isLoading && !loadingTimedOut && !hasAttemptedFetch) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-64 w-full" />
@@ -62,7 +64,7 @@ const ProductBriefTab: React.FC = () => {
 
   // Show warning if loading timed out
   const renderLoadingWarning = () => {
-    if (loadingTimedOut) {
+    if (loadingTimedOut && isLoading) {
       return (
         <Alert variant="warning" className="mb-6">
           <AlertCircle className="h-4 w-4" />
