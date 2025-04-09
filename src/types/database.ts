@@ -13,6 +13,8 @@ export type Asset = Database["public"]["Tables"]["assets"]["Row"];
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Client = Database["public"]["Tables"]["clients"]["Row"];
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
+export type ProductBrief = Database["public"]["Tables"]["product_briefs"]["Row"];
+export type ProductBriefAccount = Database["public"]["Tables"]["product_brief_accounts"]["Row"];
 
 // Base Profile type from database
 export type ProfileBase = Database["public"]["Tables"]["profiles"]["Row"];

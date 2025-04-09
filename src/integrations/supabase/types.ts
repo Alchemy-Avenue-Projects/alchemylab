@@ -603,6 +603,75 @@ export type Database = {
           },
         ]
       }
+      product_brief_accounts: {
+        Row: {
+          ad_account_id: string
+          created_at: string
+          id: string
+          product_brief_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          created_at?: string
+          id?: string
+          product_brief_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          created_at?: string
+          id?: string
+          product_brief_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_brief_accounts_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_brief_accounts_product_brief_id_fkey"
+            columns: ["product_brief_id"]
+            isOneToOne: false
+            referencedRelation: "product_briefs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_briefs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          target_audience: string | null
+          target_locations: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          target_audience?: string | null
+          target_locations?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          target_audience?: string | null
+          target_locations?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
