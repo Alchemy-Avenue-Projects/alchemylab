@@ -14,8 +14,9 @@ export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Client = Database["public"]["Tables"]["clients"]["Row"];
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
-// New type definitions for product briefs
-export type ProductBrief = {
+// Define the types for product briefs using explicit interface definitions
+// since they may not be in the Supabase types yet
+export interface ProductBrief {
   id: string;
   user_id: string;
   name: string;
@@ -24,14 +25,14 @@ export type ProductBrief = {
   target_locations: string | null;
   created_at: string;
   updated_at: string;
-};
+}
 
-export type ProductBriefAccount = {
+export interface ProductBriefAccount {
   id: string;
   product_brief_id: string;
   ad_account_id: string;
   created_at: string;
-};
+}
 
 // Base Profile type from database
 export type ProfileBase = Database["public"]["Tables"]["profiles"]["Row"];
