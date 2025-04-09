@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useMobile } from "@/hooks/useMobile";
 import { Logo } from "@/components/icons/Logo";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserMenu } from "./UserMenu";
+import UserMenu from "./UserMenu";  // Changed this line
 import { Navigation } from "./Navigation";
 import NotificationDropdown from "../notifications/NotificationDropdown";
 
