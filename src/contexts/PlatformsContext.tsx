@@ -4,6 +4,7 @@ import { Platform, PlatformConnection } from '@/types/platforms';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { generateOAuthUrl } from '@/services/platforms/oauth-utils';
 
 interface PlatformsContextType {
   connections: PlatformConnection[];
@@ -33,7 +34,6 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       setIsLoading(true);
       
-      // Use the any type as a workaround for the type issues
       const { data, error: fetchError } = await supabase
         .from('platform_connections')
         .select('*')
@@ -43,13 +43,13 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw fetchError;
       }
 
-      // Explicitly type the connections
-      const typedConnections: PlatformConnection[] = data ? data.map(conn => ({
+      // Convert the data to PlatformConnection[]
+      const typedConnections: PlatformConnection[] = data || [];
+      
+      setConnections(typedConnections.map(conn => ({
         ...conn,
         name: conn.account_name || `${conn.platform} Connection`
-      })) : [];
-      
-      setConnections(typedConnections);
+      })));
     } catch (err) {
       console.error('Error fetching platform connections:', err);
       setError('Failed to load platform connections.');
@@ -69,9 +69,21 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const connectPlatform = async (platform: Platform) => {
     try {
-      // This will be handled through our integration services which will
-      // redirect to the appropriate auth URL
-      const oauthUrl = `/api/oauth/authorize?platform=${platform}`;
+      // Generate the OAuth URL for this platform
+      const oauthUrl = generateOAuthUrl(platform);
+      
+      if (!oauthUrl) {
+        // For platforms that use API keys instead of OAuth
+        if (platform === 'openai' || platform === 'amplitude') {
+          // Redirect to the settings page with a query param to show the API key form
+          window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
+          return;
+        }
+        
+        throw new Error(`OAuth URL generation failed for ${platform}`);
+      }
+      
+      // Redirect to the OAuth URL
       window.location.href = oauthUrl;
     } catch (err) {
       console.error(`Error connecting to ${platform}:`, err);
@@ -88,7 +100,6 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!profile?.organization_id) return;
 
     try {
-      // Use the any type as a workaround for the type issues
       const { error: deleteError } = await supabase
         .from('platform_connections')
         .delete()

@@ -1,13 +1,40 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationItem from "./IntegrationItem";
 import { usePlatforms } from "@/contexts/PlatformsContext";
 import { Platform } from "@/types/platforms";
 import { Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const IntegrationsTab: React.FC = () => {
-  const { connections, isLoading, connectPlatform, disconnectPlatform } = usePlatforms();
+  const { connections, isLoading, connectPlatform, disconnectPlatform, refreshConnections } = usePlatforms();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
+  const [apiKey, setApiKey] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const { profile } = useAuth();
+
+  useEffect(() => {
+    // Check if we've been redirected with platform and modal params
+    const platform = searchParams.get('platform') as Platform | null;
+    const modal = searchParams.get('modal');
+    
+    if (platform && modal === 'api-key') {
+      setCurrentPlatform(platform);
+      setApiKeyModalOpen(true);
+      // Clear the query params
+      setSearchParams({});
+    }
+  }, [searchParams]);
 
   const handleConnect = (platform: Platform) => {
     connectPlatform(platform);
@@ -15,6 +42,50 @@ const IntegrationsTab: React.FC = () => {
 
   const handleDisconnect = (connectionId: string) => {
     disconnectPlatform(connectionId);
+  };
+
+  const handleApiKeySubmit = async () => {
+    if (!currentPlatform || !apiKey.trim() || !profile?.organization_id) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // For API key based services, we store the key as the auth_token
+      const { error } = await supabase
+        .from('platform_connections')
+        .insert({
+          platform: currentPlatform,
+          organization_id: profile.organization_id,
+          auth_token: apiKey.trim(),
+          connected_by: profile.id,
+          account_name: `${currentPlatform.charAt(0).toUpperCase() + currentPlatform.slice(1)} API Key`,
+          connected: true
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Connected Successfully',
+        description: `${currentPlatform} has been connected using your API key.`,
+      });
+      
+      // Refresh the connections list
+      await refreshConnections();
+      
+      // Close the modal
+      setApiKeyModalOpen(false);
+      setApiKey("");
+      setCurrentPlatform(null);
+    } catch (err) {
+      console.error('Error saving API key:', err);
+      toast({
+        title: 'Connection Failed',
+        description: 'There was an error connecting with your API key.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Find connections by platform type
@@ -151,6 +222,47 @@ const IntegrationsTab: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* API Key Dialog */}
+      <Dialog open={apiKeyModalOpen} onOpenChange={setApiKeyModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Connect {currentPlatform?.toUpperCase()}</DialogTitle>
+            <DialogDescription>
+              Enter your API key to connect to {currentPlatform}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="apiKey" className="text-sm font-medium">
+                API Key
+              </label>
+              <Input
+                id="apiKey"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={`Enter your ${currentPlatform} API key`}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setApiKeyModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApiKeySubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                "Connect"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
