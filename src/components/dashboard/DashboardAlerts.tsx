@@ -11,7 +11,8 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 const DashboardAlerts: React.FC = () => {
   const dashboardData = useDashboardData();
   
-  if (dashboardData.isLoading || !dashboardData.activeCampaigns) {
+  // Fix: Using dashboardData.isCampaignsLoading instead of isLoading
+  if (dashboardData.isCampaignsLoading || !dashboardData.activeCampaigns) {
     return null;
   }
   
@@ -36,25 +37,32 @@ const DashboardAlerts: React.FC = () => {
           <div>
             <h4 className="text-sm font-medium mb-2">Low-Performing Campaigns</h4>
             <div className="space-y-2">
-              {dashboardData.alerts.lowCtrCampaigns.map((snapshot) => (
-                <div key={snapshot.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                  <div>
-                    <p className="font-medium">{snapshot.campaigns?.name || "Unknown Campaign"}</p>
-                    <div className="flex items-center text-xs text-muted-foreground mt-1">
-                      <Badge variant="outline" className="mr-2 text-xs">
-                        CTR: {snapshot.ctr}%
-                      </Badge>
-                      <span>Last updated: {snapshot.date ? format(new Date(snapshot.date), "MMM d, yyyy") : "N/A"}</span>
+              {dashboardData.alerts.lowCtrCampaigns.map((snapshot) => {
+                // Get campaign name from separate query or fallback to "Unknown Campaign"
+                const campaignName = dashboardData.activeCampaigns.find(
+                  campaign => campaign.id === snapshot.campaign_id
+                )?.name || "Unknown Campaign";
+                
+                return (
+                  <div key={snapshot.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                    <div>
+                      <p className="font-medium">{campaignName}</p>
+                      <div className="flex items-center text-xs text-muted-foreground mt-1">
+                        <Badge variant="outline" className="mr-2 text-xs">
+                          CTR: {snapshot.ctr}%
+                        </Badge>
+                        <span>Last updated: {snapshot.date ? format(new Date(snapshot.date), "MMM d, yyyy") : "N/A"}</span>
+                      </div>
                     </div>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to={`/app/campaigns`} className="flex items-center">
+                        <span className="mr-1">View</span>
+                        <ArrowUpRight className="h-3 w-3" />
+                      </Link>
+                    </Button>
                   </div>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to={`/app/campaigns`} className="flex items-center">
-                      <span className="mr-1">View</span>
-                      <ArrowUpRight className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

@@ -6,6 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@/types/roles";
 
+// Extend the Profile type to include invitation_status for new users
+type InvitationStatus = "pending" | "accepted" | "rejected";
+
 export const useTeam = () => {
   const queryClient = useQueryClient();
   const { profile: currentUserProfile } = useAuth();
@@ -94,13 +97,17 @@ export const useTeam = () => {
       }
 
       // Create a new profile (simplified)
+      // Since the database schema doesn't have invitation_status field yet,
+      // we're omitting it from the insert operation and just creating the required fields
       const { data, error } = await supabase
         .from("profiles")
         .insert({
           email,
-          role: role as UserRole,
+          role,
           organization_id: currentUserProfile?.organization_id,
-          invitation_status: "pending"
+          // Note: We're using an UUID v4 for the id as it should be a reference to auth.users
+          // In a real app, you would handle this differently with a proper invitation system
+          id: crypto.randomUUID()
         })
         .select()
         .single();
