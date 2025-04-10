@@ -103,6 +103,15 @@ export const useTeam = () => {
         throw new Error(`User with email ${email} already exists in this organization`);
       }
 
+      // Get organization name if available
+      const { data: organization } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", currentUserProfile.organization_id)
+        .maybeSingle();
+
+      const organizationName = organization?.name || "Your Organization";
+
       // Call our edge function to send the invitation email
       const { data, error } = await supabase.functions.invoke("invite-team-member", {
         body: {
@@ -110,7 +119,7 @@ export const useTeam = () => {
           role,
           organizationId: currentUserProfile.organization_id,
           invitedByEmail: user.email,
-          organizationName: currentUserProfile.organization_name || "Your Organization"
+          organizationName: organizationName
         }
       });
 
