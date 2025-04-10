@@ -11,7 +11,7 @@ type InvitationStatus = "pending" | "accepted" | "rejected";
 
 export const useTeam = () => {
   const queryClient = useQueryClient();
-  const { profile: currentUserProfile } = useAuth();
+  const { profile: currentUserProfile, user } = useAuth();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
@@ -77,43 +77,44 @@ export const useTeam = () => {
     }
   });
 
-  // Invite user mutation (simplified for demo purposes)
+  // Invite user mutation - using the new edge function
   const inviteUserMutation = useMutation({
-    mutationFn: async ({ email, role }: { email: string; role: UserRole }) => {
+    mutationFn: async ({ email, role }: { email: string; role: string }) => {
       setIsInviting(true);
       
-      // In a real app, you would send an invitation email with a sign-up link
-      // For demo purposes, we'll just create a profile entry directly
+      if (!currentUserProfile?.organization_id || !user) {
+        throw new Error("User not authenticated or organization not found");
+      }
 
-      // Check if the user already exists
+      // Check if the user already exists in this organization
       const { data: existingUser } = await supabase
         .from("profiles")
         .select("id")
         .eq("email", email)
-        .single();
+        .eq("organization_id", currentUserProfile.organization_id)
+        .maybeSingle();
 
       if (existingUser) {
-        throw new Error(`User with email ${email} already exists`);
+        throw new Error(`User with email ${email} already exists in this organization`);
       }
 
-      // Create a new profile (simplified)
-      // Since the database schema doesn't have invitation_status field yet,
-      // we're omitting it from the insert operation and just creating the required fields
-      const { data, error } = await supabase
-        .from("profiles")
-        .insert({
+      // Call our edge function to send the invitation email
+      const response = await supabase.functions.invoke("invite-team-member", {
+        body: {
           email,
           role,
-          organization_id: currentUserProfile?.organization_id,
-          // Note: We're using an UUID v4 for the id as it should be a reference to auth.users
-          // In a real app, you would handle this differently with a proper invitation system
-          id: crypto.randomUUID()
-        })
-        .select()
-        .single();
+          organizationId: currentUserProfile.organization_id,
+          invitedByEmail: user.email,
+          organizationName: "Your Organization" // Ideally get this from your context
+        }
+      });
 
-      if (error) throw error;
-      return data;
+      if (response.error) {
+        console.error("Error from invite-team-member function:", response.error);
+        throw new Error(response.error.message || "Failed to send invitation");
+      }
+
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
@@ -141,7 +142,7 @@ export const useTeam = () => {
     updateRole: updateRoleMutation.mutate,
     isUpdating,
     inviteUser: ({ email, role }: { email: string; role: string }) => 
-      inviteUserMutation.mutate({ email, role: role as UserRole }),
+      inviteUserMutation.mutate({ email, role }),
     isInviting
   };
 };

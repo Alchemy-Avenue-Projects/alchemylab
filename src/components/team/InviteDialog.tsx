@@ -18,8 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail } from "lucide-react";
+import { Mail, AlertCircle } from "lucide-react";
 import { UserRole } from "@/types/roles";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface InviteDialogProps {
   open: boolean;
@@ -36,15 +37,41 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
 }) => {
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('viewer');
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleInviteUser = async () => {
+    if (!validateEmail(newEmail)) {
+      setValidationError("Please enter a valid email address");
+      return;
+    }
+    
+    setValidationError(null);
     await onInvite({ email: newEmail, role: newRole });
-    setNewEmail('');
-    setNewRole('viewer');
+    
+    // Only clear the form if the dialog remains open after invitation
+    if (open) {
+      setNewEmail('');
+      setNewRole('viewer');
+    }
+  };
+
+  // Reset form state when dialog closes
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setNewEmail('');
+      setNewRole('viewer');
+      setValidationError(null);
+    }
+    onOpenChange(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite Team Member</DialogTitle>
@@ -53,6 +80,12 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {validationError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{validationError}</AlertDescription>
+            </Alert>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
             <label htmlFor="email" className="text-right">
               Email
@@ -63,7 +96,10 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
               placeholder="colleague@example.com"
               className="col-span-3"
               value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
+              onChange={(e) => {
+                setNewEmail(e.target.value);
+                if (validationError) setValidationError(null);
+              }}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -85,9 +121,9 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
             </Select>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={isInviting}>Cancel</Button>
           </DialogClose>
           <Button 
             onClick={handleInviteUser} 
@@ -97,7 +133,7 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
             {isInviting ? (
               <>
                 <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                Inviting...
+                Sending Invitation...
               </>
             ) : (
               <>

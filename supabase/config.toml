@@ -7,3 +7,6 @@ verify_jwt = true
 
 [functions.refresh-token]
 verify_jwt = true
+
+[functions.invite-team-member]
+verify_jwt = true
