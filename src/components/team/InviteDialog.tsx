@@ -130,16 +130,16 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
           <Button 
             onClick={handleInviteUser} 
             disabled={!newEmail || isInviting}
-            className="alchemy-gradient"
+            className="alchemy-gradient relative"
           >
             {isInviting ? (
               <>
-                <Loader className="h-4 w-4 mr-2 animate-spin" />
+                <Loader className="mr-2 h-4 w-4 animate-spin" />
                 Sending Invitation...
               </>
             ) : (
               <>
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="mr-2 h-4 w-4" />
                 Send Invite
               </>
             )}

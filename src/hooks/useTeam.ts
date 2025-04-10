@@ -81,38 +81,56 @@ export const useTeam = () => {
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
       setIsInviting(true);
+      console.log("Starting invitation process for:", email, "with role:", role);
       
       // Check if user and organization_id are available
       if (!currentUserProfile?.organization_id) {
+        console.error("Missing organization_id in user profile");
         throw new Error("Organization not found");
       }
 
       if (!user?.email) {
+        console.error("Missing user email");
         throw new Error("User not authenticated properly");
       }
 
+      console.log("Organization ID:", currentUserProfile.organization_id);
+      console.log("Current user email:", user.email);
+
       // Check if the user already exists in this organization
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error: checkError } = await supabase
         .from("profiles")
         .select("id")
         .eq("email", email)
         .eq("organization_id", currentUserProfile.organization_id)
         .maybeSingle();
 
+      if (checkError) {
+        console.error("Error checking existing user:", checkError);
+        throw new Error("Failed to check if user already exists");
+      }
+
       if (existingUser) {
+        console.error("User already exists in this organization:", existingUser);
         throw new Error(`User with email ${email} already exists in this organization`);
       }
 
       // Get organization name if available
-      const { data: organization } = await supabase
+      const { data: organization, error: orgError } = await supabase
         .from("organizations")
         .select("name")
         .eq("id", currentUserProfile.organization_id)
         .maybeSingle();
 
+      if (orgError) {
+        console.error("Error fetching organization:", orgError);
+      }
+
       const organizationName = organization?.name || "Your Organization";
+      console.log("Organization name:", organizationName);
 
       // Call our edge function to send the invitation email
+      console.log("Calling invite-team-member edge function...");
       const { data, error } = await supabase.functions.invoke("invite-team-member", {
         body: {
           email,
@@ -128,6 +146,7 @@ export const useTeam = () => {
         throw new Error(error.message || "Failed to send invitation");
       }
 
+      console.log("Invitation successfully sent:", data);
       return data;
     },
     onSuccess: (data) => {

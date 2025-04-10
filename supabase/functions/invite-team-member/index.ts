@@ -14,10 +14,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Starting invite-team-member function");
+    
     const supabaseClient = createClient(
-      // Replace hardcoded URL with your Supabase project URL
       Deno.env.get('SUPABASE_URL') ?? '',
-      // Replace hardcoded anon key with your Supabase anon key
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
@@ -29,6 +29,7 @@ serve(async (req) => {
     // Extract the auth token from the request headers
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error("Missing Authorization header");
       return new Response(
         JSON.stringify({ error: 'Authorization header is required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -36,7 +37,10 @@ serve(async (req) => {
     }
 
     // Get the invitation details from the request body
-    const { email, role, organizationId, invitedByEmail, organizationName } = await req.json();
+    const requestBody = await req.json();
+    console.log("Request body:", requestBody);
+    
+    const { email, role, organizationId, invitedByEmail, organizationName } = requestBody;
     
     // Validate inputs
     if (!email || !role || !organizationId) {
@@ -58,12 +62,17 @@ serve(async (req) => {
       );
     }
 
+    console.log("Authenticated user:", user.id);
+
     // Generate a secure invitation token
     const invitationToken = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Token expires in 7 days
 
+    console.log("Created invitation token:", invitationToken);
+
     // Store the invitation in the database
+    console.log("Storing invitation in database...");
     const { error: insertError } = await supabaseClient
       .from('team_invitations')
       .insert({
@@ -77,10 +86,47 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Error inserting invitation:", insertError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to create invitation', details: insertError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      
+      // Check if the error is due to missing table
+      if (insertError.message?.includes('relation "team_invitations" does not exist')) {
+        console.log("team_invitations table doesn't exist, creating it now...");
+        
+        // Create the team_invitations table if it doesn't exist
+        const { error: createTableError } = await supabaseClient.rpc('create_team_invitations_table');
+        
+        if (createTableError) {
+          console.error("Error creating team_invitations table:", createTableError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to create team_invitations table', details: createTableError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Try inserting again
+        const { error: retryInsertError } = await supabaseClient
+          .from('team_invitations')
+          .insert({
+            email,
+            role,
+            organization_id: organizationId,
+            invited_by: user.id,
+            token: invitationToken,
+            expires_at: expiresAt.toISOString()
+          });
+          
+        if (retryInsertError) {
+          console.error("Error on retry insert invitation:", retryInsertError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to create invitation on retry', details: retryInsertError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        return new Response(
+          JSON.stringify({ error: 'Failed to create invitation', details: insertError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Generate the invitation URL that the user will receive
@@ -89,6 +135,8 @@ serve(async (req) => {
 
     console.log(`Sending invitation to ${email} with role ${role}`);
     console.log(`Invite URL: ${inviteUrl}`);
+    console.log(`Organization: ${organizationName}`);
+    console.log(`Invited by: ${invitedByEmail}`);
 
     // Use Supabase's built-in email service to send the invitation
     // This leverages your custom SMTP configuration
@@ -97,14 +145,28 @@ serve(async (req) => {
         role,
         organization_id: organizationId,
         invitation_token: invitationToken,
+        organization_name: organizationName
       },
       redirectTo: inviteUrl,
     });
 
     if (emailError) {
       console.error("Error sending email:", emailError);
+      
+      // Try to send a fallback email if the admin invite fails
+      try {
+        console.log("Sending manual email notification...");
+        // Implement your fallback email logic here if needed
+      } catch (fallbackError) {
+        console.error("Fallback email also failed:", fallbackError);
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to send invitation email', details: emailError.message }),
+        JSON.stringify({ 
+          error: 'Failed to send invitation email', 
+          details: emailError.message,
+          note: 'The invitation was created in the database, but email delivery failed. Make sure your SMTP settings are correctly configured in Supabase.'
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
