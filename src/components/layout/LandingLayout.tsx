@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/icons/Logo";
@@ -11,25 +12,30 @@ interface LandingLayoutProps {
 export default function LandingLayout({ children }: LandingLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Function to handle navigation and scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between py-4">
           <div className="flex items-center gap-2">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2" onClick={scrollToTop}>
               <Logo />
             </Link>
           </div>
           
           <div className="hidden md:flex items-center gap-6">
             <nav className="flex items-center gap-6">
-              <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
+              <Link to="/" className="text-sm font-medium hover:text-primary transition-colors" onClick={scrollToTop}>
                 Home
               </Link>
-              <Link to="/features" className="text-sm font-medium hover:text-primary transition-colors">
+              <Link to="/features" className="text-sm font-medium hover:text-primary transition-colors" onClick={scrollToTop}>
                 Features
               </Link>
-              <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
+              <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors" onClick={scrollToTop}>
                 Pricing
               </Link>
             </nav>
@@ -59,21 +65,30 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
               <Link 
                 to="/" 
                 className="text-sm font-medium hover:text-primary transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  scrollToTop();
+                }}
               >
                 Home
               </Link>
               <Link 
                 to="/features" 
                 className="text-sm font-medium hover:text-primary transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  scrollToTop();
+                }}
               >
                 Features
               </Link>
               <Link 
                 to="/pricing" 
                 className="text-sm font-medium hover:text-primary transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  scrollToTop();
+                }}
               >
                 Pricing
               </Link>
@@ -109,26 +124,90 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
             <div>
               <h3 className="font-medium mb-3">Product</h3>
               <ul className="space-y-2">
-                <li><Link to="/features" className="text-sm text-muted-foreground hover:text-primary transition-colors">Features</Link></li>
-                <li><Link to="/pricing" className="text-sm text-muted-foreground hover:text-primary transition-colors">Pricing</Link></li>
-                <li><Link to="/resources" className="text-sm text-muted-foreground hover:text-primary transition-colors">Resources</Link></li>
+                <li>
+                  <Link 
+                    to="/features" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/pricing" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/resources" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    Resources
+                  </Link>
+                </li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-medium mb-3">Company</h3>
               <ul className="space-y-2">
-                <li><Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">About</Link></li>
-                <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-primary transition-colors">Blog</Link></li>
-                <li><Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
+                <li>
+                  <Link 
+                    to="/about" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/blog" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/contact" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-medium mb-3">Legal</h3>
               <ul className="space-y-2">
-                <li><Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li>
+                  <Link 
+                    to="/privacy" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/terms" 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    onClick={scrollToTop}
+                  >
+                    Terms of Service
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

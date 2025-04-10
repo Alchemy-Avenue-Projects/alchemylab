@@ -1,6 +1,5 @@
 
 import React from "react";
-import { FlaskConical } from "lucide-react";
 
 interface LogoProps {
   className?: string;
@@ -10,9 +9,11 @@ interface LogoProps {
 export const Logo: React.FC<LogoProps> = ({ className = "h-8 w-8", showText = true }) => {
   return (
     <div className="flex items-center gap-2">
-      <div className={`rounded-md alchemy-gradient flex items-center justify-center ${className}`}>
-        <FlaskConical className="h-[60%] w-[60%] text-white" />
-      </div>
+      <img 
+        src="/lovable-uploads/23ed3d90-70a3-42c0-aed5-94425322c38b.png" 
+        alt="AlchemyLab Logo" 
+        className={className}
+      />
       {showText && <span className="font-bold text-xl">AlchemyLab</span>}
     </div>
   );
