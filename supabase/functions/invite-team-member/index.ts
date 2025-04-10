@@ -37,6 +37,15 @@ serve(async (req) => {
 
     // Get the invitation details from the request body
     const { email, role, organizationId, invitedByEmail, organizationName } = await req.json();
+    
+    // Validate inputs
+    if (!email || !role || !organizationId) {
+      console.error("Missing required fields:", { email, role, organizationId });
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get the current user's session 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
@@ -69,7 +78,7 @@ serve(async (req) => {
     if (insertError) {
       console.error("Error inserting invitation:", insertError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create invitation' }),
+        JSON.stringify({ error: 'Failed to create invitation', details: insertError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -77,6 +86,9 @@ serve(async (req) => {
     // Generate the invitation URL that the user will receive
     // This should point to your frontend route that handles accepting invitations
     const inviteUrl = `${req.headers.get('origin')}/auth/accept-invite?token=${invitationToken}`;
+
+    console.log(`Sending invitation to ${email} with role ${role}`);
+    console.log(`Invite URL: ${inviteUrl}`);
 
     // Use Supabase's built-in email service to send the invitation
     // This leverages your custom SMTP configuration
@@ -92,12 +104,12 @@ serve(async (req) => {
     if (emailError) {
       console.error("Error sending email:", emailError);
       return new Response(
-        JSON.stringify({ error: 'Failed to send invitation email' }),
+        JSON.stringify({ error: 'Failed to send invitation email', details: emailError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Invitation sent to ${email} with role ${role}`);
+    console.log(`Invitation sent successfully to ${email} with role ${role}`);
     
     return new Response(
       JSON.stringify({ 

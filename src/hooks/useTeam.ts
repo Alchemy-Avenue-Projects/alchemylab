@@ -77,13 +77,18 @@ export const useTeam = () => {
     }
   });
 
-  // Invite user mutation - using the new edge function
+  // Invite user mutation - using the edge function
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
       setIsInviting(true);
       
-      if (!currentUserProfile?.organization_id || !user) {
-        throw new Error("User not authenticated or organization not found");
+      // Check if user and organization_id are available
+      if (!currentUserProfile?.organization_id) {
+        throw new Error("Organization not found");
+      }
+
+      if (!user?.email) {
+        throw new Error("User not authenticated properly");
       }
 
       // Check if the user already exists in this organization
@@ -99,28 +104,28 @@ export const useTeam = () => {
       }
 
       // Call our edge function to send the invitation email
-      const response = await supabase.functions.invoke("invite-team-member", {
+      const { data, error } = await supabase.functions.invoke("invite-team-member", {
         body: {
           email,
           role,
           organizationId: currentUserProfile.organization_id,
           invitedByEmail: user.email,
-          organizationName: "Your Organization" // Ideally get this from your context
+          organizationName: currentUserProfile.organization_name || "Your Organization"
         }
       });
 
-      if (response.error) {
-        console.error("Error from invite-team-member function:", response.error);
-        throw new Error(response.error.message || "Failed to send invitation");
+      if (error) {
+        console.error("Error from invite-team-member function:", error);
+        throw new Error(error.message || "Failed to send invitation");
       }
 
-      return response.data;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       toast({
         title: "Invitation Sent",
-        description: "Team member invitation has been sent successfully."
+        description: `Team member invitation has been sent to ${data?.email || 'the provided email address'}.`
       });
       setIsInviting(false);
     },
@@ -141,8 +146,7 @@ export const useTeam = () => {
     error,
     updateRole: updateRoleMutation.mutate,
     isUpdating,
-    inviteUser: ({ email, role }: { email: string; role: string }) => 
-      inviteUserMutation.mutate({ email, role }),
+    inviteUser: inviteUserMutation.mutate,
     isInviting
   };
 };

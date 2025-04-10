@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, AlertCircle } from "lucide-react";
+import { Mail, AlertCircle, Loader } from "lucide-react";
 import { UserRole } from "@/types/roles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -100,6 +100,7 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
                 setNewEmail(e.target.value);
                 if (validationError) setValidationError(null);
               }}
+              disabled={isInviting}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -109,6 +110,7 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
             <Select 
               value={newRole} 
               onValueChange={(value) => setNewRole(value as UserRole)}
+              disabled={isInviting}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a role" />
@@ -132,7 +134,7 @@ const InviteDialog: React.FC<InviteDialogProps> = ({
           >
             {isInviting ? (
               <>
-                <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                <Loader className="h-4 w-4 mr-2 animate-spin" />
                 Sending Invitation...
               </>
             ) : (
