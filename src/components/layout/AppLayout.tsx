@@ -1,9 +1,8 @@
 
-import { Sidebar as ShadcnSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import LocalSidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { Outlet } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function AppLayout() {
   return (
