@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
@@ -11,7 +10,8 @@ import {
   Image, 
   Sparkles, 
   BellRing,
-  LucideIcon
+  LucideIcon,
+  Logo
 } from "lucide-react";
 
 import {
@@ -68,7 +68,7 @@ const Sidebar: React.FC = () => {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-md alchemy-gradient flex items-center justify-center">
-            <FlaskConical className="h-5 w-5 text-white" />
+            <Logo className="h-5 w-5 text-white" showText={false} />
           </div>
           <span className="font-bold text-xl">AlchemyLab</span>
         </div>
