@@ -37,7 +37,7 @@ import {
 } from "./sidebar-menu"
 
 // Create a wrapper for SidebarProvider that includes TooltipProvider
-const SidebarProvider = ({ ...props }) => {
+const SidebarProvider = ({ children, ...props }) => {
   return (
     <TooltipProvider delayDuration={0}>
       <InternalSidebarProvider
@@ -50,7 +50,9 @@ const SidebarProvider = ({ ...props }) => {
             ...props.style,
           } as React.CSSProperties
         }
-      />
+      >
+        {children}
+      </InternalSidebarProvider>
     </TooltipProvider>
   )
 }
