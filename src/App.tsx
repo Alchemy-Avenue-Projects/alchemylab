@@ -1,8 +1,10 @@
+
 import React from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
+import Homepage from "@/pages/Homepage";  // Import Homepage
 import Index from "@/pages/Index";
 import Features from "@/pages/Features";
 import Pricing from "@/pages/Pricing";
@@ -21,11 +23,10 @@ import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
 import AnalyticsData from './pages/AnalyticsData';
 
-// Update the routes section to include our new analytics data page
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Index />,
+    element: <Homepage />,  // Use Homepage instead of Index
     errorElement: <NotFound />
   },
   {
@@ -101,3 +102,4 @@ function App() {
 }
 
 export default App;
+
