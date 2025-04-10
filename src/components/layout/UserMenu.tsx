@@ -17,22 +17,19 @@ import { useAuth } from "@/contexts/AuthContext";
 const UserMenu: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   
-  // Use the full name from profile for display name
+  // Use the full name from profile for display name (exactly as it appears)
   const displayName = profile?.full_name || user?.email?.split('@')[0] || "User";
   
-  // Create initials from the first letter of first and last name
+  // Create initials from the first letter of first name and last name only
   const initials = profile?.full_name
-    ? profile.full_name
-        .split(" ")
-        .filter(part => part.length > 0) // Filter out empty parts
-        .map((part, index, arr) => {
-          // Take first letter of first part and first letter of last part
-          if (index === 0 || index === arr.length - 1) {
-            return part[0].toUpperCase();
-          }
-          return '';
-        })
-        .join("")
+    ? (() => {
+        const nameParts = profile.full_name.split(" ").filter(part => part.length > 0);
+        if (nameParts.length === 0) return "U";
+        if (nameParts.length === 1) return nameParts[0][0].toUpperCase();
+        
+        // Get first letter of first name and first letter of last name
+        return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+      })()
     : user?.email?.substring(0, 2).toUpperCase() || "U";
 
   return (

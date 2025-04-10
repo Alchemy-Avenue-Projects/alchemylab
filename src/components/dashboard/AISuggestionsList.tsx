@@ -1,3 +1,4 @@
+
 import React from "react";
 import { 
   Card, 
@@ -74,7 +75,7 @@ export const AISuggestionsList: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 pb-4">
         <h3 className="text-xl font-medium">AI Suggestions</h3>
         <Button 
           variant="outline"
