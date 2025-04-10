@@ -1,14 +1,12 @@
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Save, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import AccountSelectionList from "./AccountSelectionList";
 import { ProductBriefFormData } from "./types";
+import ProductBriefHeader from "./form/ProductBriefHeader";
+import ProductBriefDetails from "./form/ProductBriefDetails";
+import ProductBriefFooter from "./form/ProductBriefFooter";
 
 interface ProductBriefFormProps {
   product: ProductBriefFormData;
@@ -36,57 +34,21 @@ const ProductBriefForm: React.FC<ProductBriefFormProps> = ({
   return (
     <Card className="relative">
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>
-            <Input
-              className="font-bold text-lg h-8 px-0 border-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              value={product.name}
-              onChange={(e) => onInputChange(index, 'name', e.target.value)}
-              placeholder="Enter product name"
-            />
-          </CardTitle>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => onRemove(index)}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-        <CardDescription>
-          Complete the brief for this product to inform your ad campaigns
-        </CardDescription>
+        <ProductBriefHeader 
+          name={product.name}
+          index={index}
+          onInputChange={onInputChange}
+          onRemove={onRemove}
+        />
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Product Description</Label>
-            <Textarea
-              placeholder="Tell us about your product..."
-              className="min-h-[100px]"
-              value={product.description}
-              onChange={(e) => onInputChange(index, 'description', e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Target Audience</Label>
-            <Textarea
-              placeholder="Describe your target audience..."
-              value={product.targetAudience}
-              onChange={(e) => onInputChange(index, 'targetAudience', e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Target Locations</Label>
-            <Textarea
-              placeholder="List your target geographic locations..."
-              value={product.targetLocations}
-              onChange={(e) => onInputChange(index, 'targetLocations', e.target.value)}
-            />
-          </div>
-        </div>
+        <ProductBriefDetails
+          description={product.description}
+          targetAudience={product.targetAudience}
+          targetLocations={product.targetLocations}
+          index={index}
+          onInputChange={onInputChange}
+        />
         
         <Separator />
         
@@ -99,23 +61,11 @@ const ProductBriefForm: React.FC<ProductBriefFormProps> = ({
         />
       </CardContent>
       <CardFooter className="flex justify-end">
-        <Button 
-          className="alchemy-gradient" 
-          onClick={() => onSave(index)}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Save Brief
-            </>
-          )}
-        </Button>
+        <ProductBriefFooter
+          index={index}
+          onSave={onSave}
+          isSaving={isSaving}
+        />
       </CardFooter>
     </Card>
   );
