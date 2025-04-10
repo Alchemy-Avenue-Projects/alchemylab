@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   Card, 
@@ -75,7 +74,7 @@ export const AISuggestionsList: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-4">
         <h3 className="text-xl font-medium">AI Suggestions</h3>
         <Button 
           variant="outline"
@@ -86,6 +85,7 @@ export const AISuggestionsList: React.FC = () => {
             }
           }}
           disabled={isGenerating || suggestions.length === 0}
+          className="w-full sm:w-auto"
         >
           {isGenerating ? (
             <>
