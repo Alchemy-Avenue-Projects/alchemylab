@@ -37,7 +37,7 @@ import {
 } from "./sidebar-menu"
 
 // Create a wrapper for SidebarProvider that includes TooltipProvider
-export const SidebarProvider: typeof InternalSidebarProvider = (props) => {
+const SidebarProvider = ({ ...props }) => {
   return (
     <TooltipProvider delayDuration={0}>
       <InternalSidebarProvider
@@ -79,5 +79,6 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  SidebarProvider,
   useSidebar,
 }
