@@ -1,24 +1,39 @@
+
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import IntegrationItem from "./IntegrationItem";
-import { usePlatforms } from "@/contexts/PlatformsContext";
 import { Platform } from "@/types/platforms";
 import { Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlatforms } from "@/contexts/PlatformsContext";
+import PlatformCategory from "./integration/PlatformCategory";
+import ApiKeyDialog from "./integration/ApiKeyDialog";
+
+// Define platform categories
+const adPlatforms = [
+  { name: "Facebook Ads", platform: "facebook" as Platform },
+  { name: "Google Ads", platform: "google" as Platform },
+  { name: "LinkedIn Ads", platform: "linkedin" as Platform },
+  { name: "TikTok Ads", platform: "tiktok" as Platform },
+  { name: "Pinterest Ads", platform: "pinterest" as Platform },
+];
+
+const analyticsPlatforms = [
+  { name: "Google Analytics 4", platform: "google_analytics" as Platform },
+  { name: "Mixpanel", platform: "mixpanel" as Platform },
+  { name: "Amplitude", platform: "amplitude" as Platform },
+];
+
+const aiPlatforms = [
+  { name: "OpenAI", platform: "openai" as Platform },
+];
 
 const IntegrationsTab: React.FC = () => {
   const { connections, isLoading, connectPlatform, disconnectPlatform, refreshConnections } = usePlatforms();
   const [searchParams, setSearchParams] = useSearchParams();
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -69,10 +84,8 @@ const IntegrationsTab: React.FC = () => {
     }
   };
 
-  const handleApiKeySubmit = async () => {
+  const handleApiKeySubmit = async (apiKey: string) => {
     if (!currentPlatform || !apiKey.trim() || !profile?.organization_id) return;
-    
-    setIsSubmitting(true);
     
     try {
       // For API key based services, we store the key as the auth_token
@@ -99,7 +112,6 @@ const IntegrationsTab: React.FC = () => {
       
       // Close the modal
       setApiKeyModalOpen(false);
-      setApiKey("");
       setCurrentPlatform(null);
     } catch (err) {
       console.error('Error saving API key:', err);
@@ -108,14 +120,7 @@ const IntegrationsTab: React.FC = () => {
         description: 'There was an error connecting with your API key.',
         variant: 'destructive',
       });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
-
-  // Find connections by platform type
-  const getConnection = (platform: Platform) => {
-    return connections.find(conn => conn.platform === platform);
   };
 
   if (isLoading) {
@@ -128,167 +133,45 @@ const IntegrationsTab: React.FC = () => {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Ad Platform Integrations</CardTitle>
-          <CardDescription>
-            Connect your ad accounts from various platforms.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <IntegrationItem 
-              name="Facebook Ads"
-              status={getConnection('facebook') ? "connected" : "not-connected"}
-              account={getConnection('facebook')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('facebook')}
-              onDisconnect={getConnection('facebook') ? 
-                () => handleDisconnect(getConnection('facebook')!.id) : undefined}
-              isLoading={connectingPlatform === 'facebook' || disconnectingId === getConnection('facebook')?.id}
-            />
-            <IntegrationItem 
-              name="Google Ads"
-              status={getConnection('google') ? "connected" : "not-connected"}
-              account={getConnection('google')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('google')}
-              onDisconnect={getConnection('google') ? 
-                () => handleDisconnect(getConnection('google')!.id) : undefined}
-            />
-            <IntegrationItem 
-              name="LinkedIn Ads"
-              status={getConnection('linkedin') ? "connected" : "not-connected"}
-              account={getConnection('linkedin')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('linkedin')}
-              onDisconnect={getConnection('linkedin') ? 
-                () => handleDisconnect(getConnection('linkedin')!.id) : undefined}
-            />
-            <IntegrationItem 
-              name="TikTok Ads"
-              status={getConnection('tiktok') ? "connected" : "not-connected"}
-              account={getConnection('tiktok')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('tiktok')}
-              onDisconnect={getConnection('tiktok') ? 
-                () => handleDisconnect(getConnection('tiktok')!.id) : undefined}
-            />
-            <IntegrationItem 
-              name="Pinterest Ads"
-              status={getConnection('pinterest') ? "connected" : "not-connected"}
-              account={getConnection('pinterest')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('pinterest')}
-              onDisconnect={getConnection('pinterest') ? 
-                () => handleDisconnect(getConnection('pinterest')!.id) : undefined}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <PlatformCategory
+        title="Ad Platform Integrations"
+        description="Connect your ad accounts from various platforms."
+        platforms={adPlatforms}
+        connections={connections}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+        connectingPlatform={connectingPlatform}
+        disconnectingId={disconnectingId}
+      />
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics Integrations</CardTitle>
-          <CardDescription>
-            Connect your analytics platforms to import performance data.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <IntegrationItem 
-              name="Google Analytics 4"
-              status={getConnection('google_analytics') ? "connected" : "not-connected"}
-              account={getConnection('google_analytics')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('google_analytics')}
-              onDisconnect={getConnection('google_analytics') ? 
-                () => handleDisconnect(getConnection('google_analytics')!.id) : undefined}
-            />
-            <IntegrationItem 
-              name="Mixpanel"
-              status={getConnection('mixpanel') ? "connected" : "not-connected"}
-              account={getConnection('mixpanel')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('mixpanel')}
-              onDisconnect={getConnection('mixpanel') ? 
-                () => handleDisconnect(getConnection('mixpanel')!.id) : undefined}
-            />
-            <IntegrationItem 
-              name="Amplitude"
-              status={getConnection('amplitude') ? "connected" : "not-connected"}
-              account={getConnection('amplitude')?.account_name}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('amplitude')}
-              onDisconnect={getConnection('amplitude') ? 
-                () => handleDisconnect(getConnection('amplitude')!.id) : undefined}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <PlatformCategory
+        title="Analytics Integrations"
+        description="Connect your analytics platforms to import performance data."
+        platforms={analyticsPlatforms}
+        connections={connections}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+        connectingPlatform={connectingPlatform}
+        disconnectingId={disconnectingId}
+      />
       
-      <Card>
-        <CardHeader>
-          <CardTitle>AI Integrations</CardTitle>
-          <CardDescription>
-            Connect AI services for enhanced capabilities.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <IntegrationItem 
-              name="OpenAI"
-              status={getConnection('openai') ? "connected" : "not-connected"}
-              account={getConnection('openai')?.account_name || "API Key: sk-...***"}
-              logo="/placeholder.svg"
-              onConnect={() => handleConnect('openai')}
-              onDisconnect={getConnection('openai') ? 
-                () => handleDisconnect(getConnection('openai')!.id) : undefined}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <PlatformCategory
+        title="AI Integrations"
+        description="Connect AI services for enhanced capabilities."
+        platforms={aiPlatforms}
+        connections={connections}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+        connectingPlatform={connectingPlatform}
+        disconnectingId={disconnectingId}
+      />
 
-      {/* API Key Dialog */}
-      <Dialog open={apiKeyModalOpen} onOpenChange={setApiKeyModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Connect {currentPlatform?.toUpperCase()}</DialogTitle>
-            <DialogDescription>
-              Enter your API key to connect to {currentPlatform}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <label htmlFor="apiKey" className="text-sm font-medium">
-                API Key
-              </label>
-              <Input
-                id="apiKey"
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={`Enter your ${currentPlatform} API key`}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setApiKeyModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleApiKeySubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                "Connect"
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ApiKeyDialog
+        open={apiKeyModalOpen}
+        onOpenChange={setApiKeyModalOpen}
+        platform={currentPlatform}
+        onSubmit={handleApiKeySubmit}
+      />
     </>
   );
 };
