@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,9 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Logo className="h-12 w-12 mx-auto mb-4 text-primary" />
+          <div className="flex justify-center mb-4">
+            <Logo className="h-12 w-12 text-primary" />
+          </div>
           <h1 className="text-2xl font-bold">AlchemyLab</h1>
           <p className="text-muted-foreground">Your Marketing Command Center</p>
         </div>

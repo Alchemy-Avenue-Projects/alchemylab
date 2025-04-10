@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Save, Loader2, AlertCircle } from "lucide-react";
+import { PlusCircle, Loader2, AlertCircle } from "lucide-react";
 import { usePlatforms } from "@/contexts/PlatformsContext";
 import ProductBriefForm from "./product-brief/ProductBriefForm";
 import { useProductBriefService } from "./product-brief/useProductBriefService";
@@ -53,7 +53,6 @@ const ProductBriefTab: React.FC = () => {
     return (
       <div className="space-y-6">
         <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-64 w-full" />
         <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
           <span className="ml-2 text-lg">Loading product briefs...</span>
@@ -78,6 +77,10 @@ const ProductBriefTab: React.FC = () => {
     return null;
   };
 
+  const handleSaveProduct = (index: number) => {
+    handleSave(connections, index);
+  };
+
   return (
     <div className="space-y-6">
       {renderLoadingWarning()}
@@ -98,6 +101,8 @@ const ProductBriefTab: React.FC = () => {
             onInputChange={handleInputChange}
             onAccountToggle={handleAccountToggle}
             onSelectAll={handleSelectAll}
+            onSave={handleSaveProduct}
+            isSaving={isSaving}
           />
         ))
       )}
@@ -112,26 +117,6 @@ const ProductBriefTab: React.FC = () => {
           Add Another Product
         </Button>
       )}
-      
-      <div className="flex justify-end">
-        <Button 
-          className="alchemy-gradient" 
-          onClick={() => handleSave(connections)}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Save All Briefs
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Logo from "@/components/icons/Logo";
 import { ChevronRight, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LandingLayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface LandingLayoutProps {
 
 export default function LandingLayout({ children }: LandingLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   // Function to handle navigation and scroll to top
   const scrollToTop = () => {
@@ -40,12 +42,20 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
               </Link>
             </nav>
             <div className="flex items-center gap-2">
-              <Button variant="outline" asChild>
-                <Link to="/auth?mode=login">Log in</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/auth?mode=signup">Sign up</Link>
-              </Button>
+              {user ? (
+                <Button asChild>
+                  <Link to="/app">Dashboard</Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" asChild>
+                    <Link to="/auth?mode=login">Log in</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/auth?mode=signup">Sign up</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
           
@@ -93,12 +103,20 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
                 Pricing
               </Link>
               <div className="flex flex-col gap-2 pt-2">
-                <Button variant="outline" asChild>
-                  <Link to="/auth?mode=login" onClick={() => setMobileMenuOpen(false)}>Log in</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>Sign up</Link>
-                </Button>
+                {user ? (
+                  <Button asChild>
+                    <Link to="/app" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link to="/auth?mode=login" onClick={() => setMobileMenuOpen(false)}>Log in</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>Sign up</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>

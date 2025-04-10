@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Card,
@@ -158,6 +159,7 @@ const Team: React.FC = () => {
                 <Button 
                   onClick={handleInviteUser} 
                   disabled={!newEmail || isInviting}
+                  className="alchemy-gradient"
                 >
                   {isInviting ? (
                     <>
@@ -187,7 +189,7 @@ const Team: React.FC = () => {
         <CardContent>
           {isLoading ? (
             <div className="space-y-4">
-              {Array(4).fill(0).map((_, i) => (
+              {Array(3).fill(0).map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
                   <Skeleton className="h-12 w-12 rounded-full" />
                   <div className="space-y-2">

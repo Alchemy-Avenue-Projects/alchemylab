@@ -168,7 +168,20 @@ export const useProductBriefService = () => {
     }));
   };
 
-  const validateProducts = () => {
+  const validateProducts = (productIndex?: number) => {
+    if (productIndex !== undefined) {
+      const product = products[productIndex];
+      if (!product.name || product.name.trim() === '') {
+        toast({
+          title: "Validation Error",
+          description: "Product name is required.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      return true;
+    }
+    
     for (const product of products) {
       if (!product.name || product.name.trim() === '') {
         toast({
@@ -182,7 +195,67 @@ export const useProductBriefService = () => {
     return true;
   };
 
-  const handleSave = async (connections: any[]) => {
+  const saveProduct = async (product: ProductBriefFormData, connections: any[]) => {
+    let productId = product.id;
+    
+    // If product has an id, update it; otherwise, insert a new one
+    if (productId) {
+      const { error } = await supabase
+        .from('product_briefs')
+        .update({
+          name: product.name,
+          description: product.description,
+          target_audience: product.targetAudience,
+          target_locations: product.targetLocations
+        })
+        .eq('id', productId);
+        
+      if (error) throw error;
+    } else {
+      // Insert new product
+      const { data, error } = await supabase
+        .from('product_briefs')
+        .insert({
+          user_id: user?.id,
+          name: product.name,
+          description: product.description,
+          target_audience: product.targetAudience,
+          target_locations: product.targetLocations
+        })
+        .select();
+        
+      if (error) throw error;
+      if (data) productId = data[0].id;
+    }
+    
+    // Remove all existing account associations for this product
+    if (productId) {
+      const { error } = await supabase
+        .from('product_brief_accounts')
+        .delete()
+        .eq('product_brief_id', productId);
+        
+      if (error) throw error;
+      
+      // Insert new account associations
+      if (product.selectedAccounts.length > 0) {
+        const accountMappings = product.selectedAccounts.map(accountId => ({
+          product_brief_id: productId,
+          ad_account_id: accountId
+        }));
+        
+        const { error: insertError } = await supabase
+          .from('product_brief_accounts')
+          .insert(accountMappings);
+          
+        if (insertError) throw insertError;
+      }
+    }
+    
+    return productId;
+  };
+
+  const handleSave = async (connections: any[], productIndex?: number) => {
     if (!user) {
       toast({
         title: "Authentication Error",
@@ -192,77 +265,65 @@ export const useProductBriefService = () => {
       return;
     }
     
+    if (productIndex !== undefined) {
+      // Save just one product
+      if (!validateProducts(productIndex)) return;
+      
+      setIsSaving(true);
+      
+      try {
+        const product = products[productIndex];
+        const productId = await saveProduct(product, connections);
+        
+        // Update the products array with the new id
+        if (!product.id) {
+          setProducts(products.map((p, i) => 
+            i === productIndex ? { ...p, id: productId } : p
+          ));
+        }
+        
+        toast({
+          title: "Success",
+          description: `Product brief "${product.name}" saved successfully.`
+        });
+      } catch (error) {
+        console.error('Error saving product brief:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save product brief.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSaving(false);
+      }
+      
+      return;
+    }
+    
+    // Save all products
     if (!validateProducts()) return;
     
     setIsSaving(true);
     
     try {
       // For each product, insert or update in the database
-      for (const product of products) {
-        let productId = product.id;
+      const updatedProducts = [...products];
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+        const productId = await saveProduct(product, connections);
         
-        // If product has an id, update it; otherwise, insert a new one
-        if (productId) {
-          const { error } = await supabase
-            .from('product_briefs')
-            .update({
-              name: product.name,
-              description: product.description,
-              target_audience: product.targetAudience,
-              target_locations: product.targetLocations
-            })
-            .eq('id', productId);
-            
-          if (error) throw error;
-        } else {
-          // Insert new product
-          const { data, error } = await supabase
-            .from('product_briefs')
-            .insert({
-              user_id: user.id,
-              name: product.name,
-              description: product.description,
-              target_audience: product.targetAudience,
-              target_locations: product.targetLocations
-            })
-            .select();
-            
-          if (error) throw error;
-          if (data) productId = data[0].id;
-        }
-        
-        // Remove all existing account associations for this product
-        if (productId) {
-          const { error } = await supabase
-            .from('product_brief_accounts')
-            .delete()
-            .eq('product_brief_id', productId);
-            
-          if (error) throw error;
-          
-          // Insert new account associations
-          if (product.selectedAccounts.length > 0) {
-            const accountMappings = product.selectedAccounts.map(accountId => ({
-              product_brief_id: productId,
-              ad_account_id: accountId
-            }));
-            
-            const { error: insertError } = await supabase
-              .from('product_brief_accounts')
-              .insert(accountMappings);
-              
-            if (insertError) throw insertError;
-          }
+        // Update the id if it's a new product
+        if (!product.id) {
+          updatedProducts[i] = { ...product, id: productId };
         }
       }
+      
+      setProducts(updatedProducts);
       
       toast({
         title: "Success",
         description: `Saved ${products.length} product ${products.length === 1 ? 'brief' : 'briefs'}.`
       });
-      
-      // Refresh the product briefs
-      await fetchProductBriefs();
       
     } catch (error) {
       console.error('Error saving product briefs:', error);

@@ -1,11 +1,11 @@
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2 } from "lucide-react";
+import { Trash2, Save, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import AccountSelectionList from "./AccountSelectionList";
 import { ProductBriefFormData } from "./types";
@@ -18,6 +18,8 @@ interface ProductBriefFormProps {
   onInputChange: (index: number, field: string, value: string) => void;
   onAccountToggle: (productIndex: number, accountId: string) => void;
   onSelectAll: (productIndex: number, select: boolean) => void;
+  onSave: (index: number) => void;
+  isSaving: boolean;
 }
 
 const ProductBriefForm: React.FC<ProductBriefFormProps> = ({
@@ -27,7 +29,9 @@ const ProductBriefForm: React.FC<ProductBriefFormProps> = ({
   onRemove,
   onInputChange,
   onAccountToggle,
-  onSelectAll
+  onSelectAll,
+  onSave,
+  isSaving
 }) => {
   return (
     <Card className="relative">
@@ -94,6 +98,25 @@ const ProductBriefForm: React.FC<ProductBriefFormProps> = ({
           onSelectAll={onSelectAll}
         />
       </CardContent>
+      <CardFooter className="flex justify-end">
+        <Button 
+          className="alchemy-gradient" 
+          onClick={() => onSave(index)}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save Brief
+            </>
+          )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 };
