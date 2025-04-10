@@ -86,7 +86,7 @@ export const useTeam = () => {
       // Check if user and organization_id are available
       if (!currentUserProfile?.organization_id) {
         console.error("Missing organization_id in user profile");
-        throw new Error("Organization not found");
+        throw new Error("Organization not found. Please set up your organization first.");
       }
 
       if (!user?.email) {
@@ -124,6 +124,7 @@ export const useTeam = () => {
 
       if (orgError) {
         console.error("Error fetching organization:", orgError);
+        throw new Error("Failed to fetch organization details");
       }
 
       const organizationName = organization?.name || "Your Organization";
@@ -137,7 +138,7 @@ export const useTeam = () => {
           role,
           organizationId: currentUserProfile.organization_id,
           invitedByEmail: user.email,
-          organizationName: organizationName
+          organizationName
         }
       });
 
@@ -147,7 +148,7 @@ export const useTeam = () => {
       }
 
       console.log("Invitation successfully sent:", data);
-      return data;
+      return { email, role, ...data };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });

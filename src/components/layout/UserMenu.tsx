@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,12 +17,17 @@ import { useAuth } from "@/contexts/AuthContext";
 const UserMenu: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   
+  // Get the user's display name (full name or email)
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || "User";
+  
+  // Create initials from the full name or email
   const initials = profile?.full_name
     ? profile.full_name
         .split(" ")
         .map((n) => n[0])
         .join("")
-    : user?.email?.substring(0, 2) || "U";
+        .toUpperCase()
+    : user?.email?.substring(0, 2).toUpperCase() || "U";
 
   return (
     <DropdownMenu>
@@ -37,7 +42,7 @@ const UserMenu: React.FC = () => {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
             </p>

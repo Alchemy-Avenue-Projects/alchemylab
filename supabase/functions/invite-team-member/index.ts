@@ -64,12 +64,64 @@ serve(async (req) => {
 
     console.log("Authenticated user:", user.id);
 
+    // Verify the organization exists
+    const { data: orgData, error: orgError } = await supabaseClient
+      .from('organizations')
+      .select('id, name')
+      .eq('id', organizationId)
+      .maybeSingle();
+      
+    if (orgError) {
+      console.error("Error checking organization:", orgError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to verify organization', details: orgError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!orgData) {
+      console.error("Organization not found:", organizationId);
+      return new Response(
+        JSON.stringify({ error: 'Organization not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Generate a secure invitation token
     const invitationToken = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Token expires in 7 days
 
     console.log("Created invitation token:", invitationToken);
+
+    // Check if team_invitations table exists, create it if not
+    const { error: tableCheckError } = await supabaseClient.rpc('create_team_invitations_table_if_not_exists');
+    
+    if (tableCheckError) {
+      console.log("Error checking/creating team_invitations table:", tableCheckError);
+      console.log("Attempting to create table directly...");
+      
+      // Try to create the table directly if the RPC fails
+      const createTableSQL = `
+        CREATE TABLE IF NOT EXISTS public.team_invitations (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          email TEXT NOT NULL,
+          role TEXT NOT NULL,
+          organization_id UUID NOT NULL,
+          invited_by UUID NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+        );
+      `;
+      
+      const { error: createError } = await supabaseClient.rpc('exec_sql', { sql: createTableSQL });
+      
+      if (createError) {
+        console.error("Failed to create team_invitations table:", createError);
+        // Continue anyway - the insert will fail if table doesn't exist
+      }
+    }
 
     // Store the invitation in the database
     console.log("Storing invitation in database...");
@@ -86,47 +138,10 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Error inserting invitation:", insertError);
-      
-      // Check if the error is due to missing table
-      if (insertError.message?.includes('relation "team_invitations" does not exist')) {
-        console.log("team_invitations table doesn't exist, creating it now...");
-        
-        // Create the team_invitations table if it doesn't exist
-        const { error: createTableError } = await supabaseClient.rpc('create_team_invitations_table');
-        
-        if (createTableError) {
-          console.error("Error creating team_invitations table:", createTableError);
-          return new Response(
-            JSON.stringify({ error: 'Failed to create team_invitations table', details: createTableError.message }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        // Try inserting again
-        const { error: retryInsertError } = await supabaseClient
-          .from('team_invitations')
-          .insert({
-            email,
-            role,
-            organization_id: organizationId,
-            invited_by: user.id,
-            token: invitationToken,
-            expires_at: expiresAt.toISOString()
-          });
-          
-        if (retryInsertError) {
-          console.error("Error on retry insert invitation:", retryInsertError);
-          return new Response(
-            JSON.stringify({ error: 'Failed to create invitation on retry', details: retryInsertError.message }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } else {
-        return new Response(
-          JSON.stringify({ error: 'Failed to create invitation', details: insertError.message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      return new Response(
+        JSON.stringify({ error: 'Failed to create invitation', details: insertError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Generate the invitation URL that the user will receive
