@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { SaveProductParams } from "../types";
+import { SaveProductParams, ProductBriefFormData } from "../types";
 import { validateProductBrief } from "../utils/productBriefUtils";
 import { saveProductToApi, deleteProductAccounts, saveProductAccounts } from "../api/productBriefApi";
 
