@@ -10,7 +10,7 @@ export const Logo: React.FC<LogoProps> = ({ className = "h-8 w-8", showText = tr
   return (
     <div className="flex items-center gap-2">
       <img 
-        src="/lovable-uploads/23ed3d90-70a3-42c0-aed5-94425322c38b.png" 
+        src="/lovable-uploads/7cf50a2d-f226-4edb-8207-08bdc2d69729.png" 
         alt="AlchemyLab Logo" 
         className={className}
       />
