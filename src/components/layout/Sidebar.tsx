@@ -14,7 +14,7 @@ import {
   LucideIcon
 } from "lucide-react";
 
-import { Logo } from "@/components/icons/Logo";
+import Logo from "@/components/icons/Logo";
 
 import {
   Sidebar as SidebarContainer,
@@ -69,9 +69,7 @@ const Sidebar: React.FC = () => {
     <SidebarContainer>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md alchemy-gradient flex items-center justify-center">
-            <Logo className="h-5 w-5" showText={false} />
-          </div>
+          <Logo className="h-8 w-8" showText={false} />
           <span className="font-bold text-xl">AlchemyLab</span>
         </div>
         <SidebarTrigger className="absolute right-4 top-4 sm:right-4 sm:top-4 md:hidden" />

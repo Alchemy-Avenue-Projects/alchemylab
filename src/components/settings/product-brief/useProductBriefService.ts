@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,19 +23,20 @@ export const useProductBriefService = () => {
     }
     
     setIsLoading(true);
+    
     try {
+      console.log("Fetching product briefs for user:", user.id);
       const productBriefs = await fetchProductBriefsFromApi(user.id);
       
       if (productBriefs && productBriefs.length > 0) {
+        console.log("Found product briefs:", productBriefs.length);
         // For each product brief, get its associated accounts
         const productsWithAccounts = await Promise.all(
           productBriefs.map(brief => mapBriefToFormData(brief))
         );
         
-        console.log("Products with accounts:", productsWithAccounts);
         setProducts(productsWithAccounts);
       } else {
-        // If no briefs found, use the default empty brief template
         console.log("No product briefs found, using default empty brief");
         setProducts([createEmptyProduct()]);
       }
@@ -57,11 +57,15 @@ export const useProductBriefService = () => {
     }
   }, [user, toast]);
 
-  // Use immediate loading state management
+  // Load product briefs when the component mounts
   useEffect(() => {
     console.log("Auth state changed, user:", user?.id);
     if (user) {
-      fetchProductBriefs();
+      // Add a small delay to ensure auth state is fully resolved
+      const timer = setTimeout(() => {
+        fetchProductBriefs();
+      }, 500);
+      return () => clearTimeout(timer);
     } else {
       // If no user, exit loading state to avoid infinite spinner
       setIsLoading(false);

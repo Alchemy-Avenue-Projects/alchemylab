@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +19,8 @@ const IntegrationsTab: React.FC = () => {
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const { toast } = useToast();
   const { profile } = useAuth();
 
@@ -34,14 +35,38 @@ const IntegrationsTab: React.FC = () => {
       // Clear the query params
       setSearchParams({});
     }
-  }, [searchParams]);
+  }, [searchParams, setSearchParams]);
 
-  const handleConnect = (platform: Platform) => {
-    connectPlatform(platform);
+  const handleConnect = async (platform: Platform) => {
+    try {
+      setConnectingPlatform(platform);
+      await connectPlatform(platform);
+    } catch (error) {
+      console.error(`Error connecting to ${platform}:`, error);
+      toast({
+        title: "Connection Failed",
+        description: `Failed to connect to ${platform}. Please try again.`,
+        variant: "destructive"
+      });
+    } finally {
+      setConnectingPlatform(null);
+    }
   };
 
-  const handleDisconnect = (connectionId: string) => {
-    disconnectPlatform(connectionId);
+  const handleDisconnect = async (connectionId: string) => {
+    try {
+      setDisconnectingId(connectionId);
+      await disconnectPlatform(connectionId);
+    } catch (error) {
+      console.error(`Error disconnecting:`, error);
+      toast({
+        title: "Disconnection Failed",
+        description: "Failed to disconnect platform. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDisconnectingId(null);
+    }
   };
 
   const handleApiKeySubmit = async () => {
@@ -120,6 +145,7 @@ const IntegrationsTab: React.FC = () => {
               onConnect={() => handleConnect('facebook')}
               onDisconnect={getConnection('facebook') ? 
                 () => handleDisconnect(getConnection('facebook')!.id) : undefined}
+              isLoading={connectingPlatform === 'facebook' || disconnectingId === getConnection('facebook')?.id}
             />
             <IntegrationItem 
               name="Google Ads"

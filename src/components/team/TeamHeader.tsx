@@ -9,12 +9,12 @@ interface TeamHeaderProps {
 }
 
 const TeamHeader: React.FC<TeamHeaderProps> = ({ onOpenInviteDialog }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <h1 className="text-3xl font-semibold">Team</h1>
-      {isAdmin && (
+      {user && (
         <Button className="alchemy-gradient" onClick={onOpenInviteDialog}>
           <UserPlus className="h-4 w-4 mr-2" />
           Invite Team Member

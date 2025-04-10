@@ -37,9 +37,9 @@ const ProductBriefTab: React.FC = () => {
   useEffect(() => {
     if (isLoading) {
       const timeoutId = setTimeout(() => {
-        console.log("Loading timeout reached, might be stuck");
+        console.log("Loading timeout reached for product briefs");
         setLoadingTimedOut(true);
-      }, 5000);
+      }, 3000); // Reduced from 5000 to 3000ms
       
       return () => clearTimeout(timeoutId);
     }
@@ -48,14 +48,15 @@ const ProductBriefTab: React.FC = () => {
   // Force-show content if loading gets stuck or when we've attempted a fetch
   const showContent = !isLoading || loadingTimedOut || hasAttemptedFetch;
 
-  // Initial loading state with skeleton
+  // Show loading skeleton on first load only
   if (isLoading && !loadingTimedOut && !hasAttemptedFetch) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-64 w-full" />
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-          <span className="ml-2 text-lg">Loading product briefs...</span>
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-48 w-full" />
+        <div className="flex justify-center items-center py-4">
+          <Loader2 className="h-6 w-6 text-primary animate-spin mr-2" />
+          <span>Loading product briefs...</span>
         </div>
       </div>
     );
@@ -93,7 +94,7 @@ const ProductBriefTab: React.FC = () => {
       ) : (
         products.map((product, index) => (
           <ProductBriefForm
-            key={product.id || index}
+            key={product.id || `product-${index}`}
             product={product}
             index={index}
             connections={connections}
