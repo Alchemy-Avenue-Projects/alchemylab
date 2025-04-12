@@ -6,6 +6,21 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://yiqfsetkcnvudalyntvw.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpcWZzZXRrY252dWRhbHludHZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwMTQyNDEsImV4cCI6MjA1OTU5MDI0MX0.URMjHKwAZcIY6HEg0AO5diBXlDISw6k84ZbnMK-4maU";
 
+// Get token from localStorage
+const getAuthToken = () => {
+  try {
+    const tokenString = localStorage.getItem('supabase.auth.token');
+    if (tokenString) {
+      const tokenData = JSON.parse(tokenString);
+      return tokenData?.currentSession?.access_token || '';
+    }
+    return '';
+  } catch (error) {
+    console.error('Error retrieving auth token:', error);
+    return '';
+  }
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -18,7 +33,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   global: {
     headers: {
       // Forward auth token to all supabase requests including edge functions
-      'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
+      'Authorization': `Bearer ${getAuthToken()}`
     }
   }
 });
