@@ -34,8 +34,15 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
     return connections.find(conn => conn.platform === platform);
   };
 
+  // Get the appropriate logo for each platform
+  const getPlatformLogo = (platform: Platform) => {
+    // In a real app, you'd have actual logos for each platform
+    // For now, we'll just use placeholder.svg
+    return "/placeholder.svg";
+  };
+
   return (
-    <Card>
+    <Card className="mb-6">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -48,7 +55,7 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
               name={platformItem.name}
               status={getConnection(platformItem.platform) ? "connected" : "not-connected"}
               account={getConnection(platformItem.platform)?.account_name}
-              logo="/placeholder.svg"
+              logo={getPlatformLogo(platformItem.platform)}
               onConnect={() => onConnect(platformItem.platform)}
               onDisconnect={
                 getConnection(platformItem.platform)

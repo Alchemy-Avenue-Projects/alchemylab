@@ -24,10 +24,10 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
   isLoading = false
 }) => {
   return (
-    <div className="flex justify-between items-center p-4 border rounded-md">
+    <div className="flex justify-between items-center p-4 border rounded-md bg-card shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center">
-        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center mr-4">
-          <img src={logo} alt={name} className="h-6 w-6" />
+        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center mr-4 overflow-hidden">
+          <img src={logo} alt={name} className="h-6 w-6 object-contain" />
         </div>
         <div>
           <div className="font-medium">{name}</div>
@@ -53,7 +53,7 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
         </div>
       ) : (
         <Button 
-          className="alchemy-gradient" 
+          className="bg-primary hover:bg-primary/90 text-white"
           onClick={onConnect}
           disabled={isLoading}
         >

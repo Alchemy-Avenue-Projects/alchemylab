@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // This component handles API route redirects that would typically be handled 
 // by backend routing in a Next.js app, but need explicit handling in React Router
@@ -43,11 +44,15 @@ const AuthCallback: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-      <div className="text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-        <h1 className="text-2xl font-semibold mb-2">Connecting to {provider}</h1>
-        <p className="text-muted-foreground">Please wait while we complete the authentication...</p>
-      </div>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center">Connecting to {provider}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center p-6">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-center text-muted-foreground">Please wait while we complete the authentication...</p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
