@@ -1,12 +1,11 @@
-
 export interface ProductBrief {
   id: string;
   name: string;
   description: string;
   target_audience: string;
   target_locations: string;
-  dos?: string[];
-  donts?: string[];
+  dos: string[];
+  donts: string[];
 }
 
 export type Platform = 'Meta' | 'Google' | 'TikTok' | 'LinkedIn' | 'Pinterest' | 'Snapchat';

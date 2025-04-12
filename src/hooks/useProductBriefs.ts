@@ -23,11 +23,11 @@ export const useProductBriefs = () => {
 
         if (error) throw error;
         
-        // Parse dos and donts if they exist
+        // Parse dos and donts if they exist or default to empty arrays
         const formattedBriefs = data.map(brief => ({
           ...brief,
-          dos: brief.dos ? JSON.parse(brief.dos) : [],
-          donts: brief.donts ? JSON.parse(brief.donts) : []
+          dos: brief.dos ? JSON.parse(brief.dos as string) : [],
+          donts: brief.donts ? JSON.parse(brief.donts as string) : []
         }));
         
         setProductBriefs(formattedBriefs);
@@ -55,8 +55,8 @@ export const useProductBriefs = () => {
       // Parse dos and donts if they exist
       return {
         ...data,
-        dos: data.dos ? JSON.parse(data.dos) : [],
-        donts: data.donts ? JSON.parse(data.donts) : []
+        dos: data.dos ? JSON.parse(data.dos as string) : [],
+        donts: data.donts ? JSON.parse(data.donts as string) : []
       };
     } catch (err) {
       console.error('Error fetching product brief by ID:', err);
