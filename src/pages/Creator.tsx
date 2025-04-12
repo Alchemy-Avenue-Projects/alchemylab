@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Sparkles, 
   Save, 
@@ -11,7 +11,9 @@ import {
   RefreshCw,
   Layers,
   FileImage,
-  FileText
+  FileText,
+  Check,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,8 +23,103 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { SearchableSelect, SearchableSelectItem } from "@/components/ui/searchable-select";
+import { MultiSelect, MultiSelectItem } from "@/components/ui/multi-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useProductBriefs } from "@/hooks/useProductBriefs";
+import { useAdGenerator } from "@/hooks/useAdGenerator";
+import { Platform, Angle, AdResult } from "@/types/creator";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Creator: React.FC = () => {
+  // States for form
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [selectedAngle, setSelectedAngle] = useState<string>("");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("english");
+  const [includeCta, setIncludeCta] = useState<boolean>(true);
+  
+  // States for results
+  const [adResults, setAdResults] = useState<AdResult[]>([]);
+  
+  // Hooks
+  const { productBriefs, isLoading: isLoadingProducts, error: productsError, getProductBriefById } = useProductBriefs();
+  const { generateAds, isGenerating } = useAdGenerator();
+  
+  // Platform options
+  const platformOptions: MultiSelectItem[] = [
+    { value: "Meta", label: "Meta" },
+    { value: "Google", label: "Google" },
+    { value: "TikTok", label: "TikTok" },
+    { value: "LinkedIn", label: "LinkedIn" },
+    { value: "Pinterest", label: "Pinterest" },
+    { value: "Snapchat", label: "Snapchat" }
+  ];
+  
+  // Angle options
+  const angleOptions = [
+    { value: "urgency", label: "Urgency" },
+    { value: "curiosity", label: "Curiosity" },
+    { value: "social_proof", label: "Social Proof" },
+    { value: "exclusivity", label: "Exclusivity" },
+    { value: "affordability", label: "Affordability" },
+    { value: "emotional", label: "Emotional" },
+    { value: "relief", label: "Relief" }
+  ];
+  
+  // Language options
+  const languageOptions: SearchableSelectItem[] = [
+    { value: "english", label: "English" },
+    { value: "spanish", label: "Spanish" },
+    { value: "french", label: "French" },
+    { value: "german", label: "German" },
+    { value: "italian", label: "Italian" },
+    { value: "portuguese", label: "Portuguese" },
+    { value: "dutch", label: "Dutch" },
+    { value: "russian", label: "Russian" },
+    { value: "chinese", label: "Chinese" },
+    { value: "japanese", label: "Japanese" },
+    { value: "korean", label: "Korean" }
+  ];
+  
+  const isFormValid = selectedProductId && selectedPlatforms.length > 0;
+  
+  const handleGenerate = async () => {
+    if (!isFormValid) {
+      toast.error("Please select a product and at least one platform");
+      return;
+    }
+    
+    try {
+      const productBrief = await getProductBriefById(selectedProductId);
+      
+      if (!productBrief) {
+        toast.error("Failed to load product brief details");
+        return;
+      }
+      
+      const payload = {
+        platform: selectedPlatforms as Platform[],
+        product: productBrief.description || "",
+        audience: productBrief.target_audience || "",
+        location: productBrief.target_locations || "",
+        language: selectedLanguage,
+        angle: selectedAngle as Angle | undefined,
+        cta: includeCta,
+        dos: productBrief.dos || [],
+        donts: productBrief.donts || []
+      };
+      
+      const results = await generateAds(payload);
+      setAdResults(results);
+    } catch (error) {
+      console.error("Error generating ads:", error);
+      toast.error("Failed to generate ads");
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -43,22 +140,73 @@ const Creator: React.FC = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ad Preview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="w-full aspect-[4/3] bg-muted rounded-md flex items-center justify-center">
-                <FileImage className="h-12 w-12 text-muted-foreground" />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold">Boost Your Marketing Performance with AI</h3>
-                <p className="text-sm">Discover how AI-powered optimization can increase conversions by 35% while reducing your ad spend. Try AdAlchemy today!</p>
-                <Button className="alchemy-gradient w-full sm:w-auto">Learn More</Button>
-              </div>
-            </CardContent>
-          </Card>
+          {adResults.length > 0 ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generated Ads</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {adResults.map((result, index) => (
+                    <div key={index} className="p-4 bg-muted rounded-md space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold">{result.platform}</h3>
+                        <Button variant="ghost" size="sm" className="h-8 gap-1">
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy
+                        </Button>
+                      </div>
+                      
+                      {result.platform === 'Meta' ? (
+                        <div className="space-y-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Primary Text</Label>
+                            <p className="text-sm">{result.primary_text}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Headline</Label>
+                            <p className="text-sm font-medium">{result.headline}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Description</Label>
+                            <p className="text-sm">{result.description}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Headline</Label>
+                            <p className="text-sm font-medium">{result.headline}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Body</Label>
+                            <p className="text-sm">{result.body}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ad Preview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="w-full aspect-[4/3] bg-muted rounded-md flex items-center justify-center">
+                  <FileImage className="h-12 w-12 text-muted-foreground" />
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold">Boost Your Marketing Performance with AI</h3>
+                  <p className="text-sm">Discover how AI-powered optimization can increase conversions by 35% while reducing your ad spend. Try AdAlchemy today!</p>
+                  <Button className="alchemy-gradient w-full sm:w-auto">Learn More</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           <Card>
             <CardHeader>
@@ -107,54 +255,90 @@ const Creator: React.FC = () => {
                 </TabsList>
                 
                 <TabsContent value="text" className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="prompt">Prompt</Label>
-                    <Textarea
-                      id="prompt"
-                      placeholder="Create an ad promoting a marketing platform with AI features..."
-                      className="min-h-32"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="target">Target Audience</Label>
-                    <Input id="target" placeholder="Marketing professionals, digital agencies" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="platform">Platform</Label>
-                    <Input id="platform" placeholder="Facebook Ads" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Tone</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button variant="outline" size="sm" className="border-alchemy-500 bg-alchemy-50 dark:bg-alchemy-900/20">Professional</Button>
-                      <Button variant="outline" size="sm">Casual</Button>
-                      <Button variant="outline" size="sm">Persuasive</Button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Additional Settings</Label>
+                  {productsError ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Failed to load products. Please try again later.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="cta">Include CTA</Label>
-                          <p className="text-xs text-muted-foreground">Add a call to action</p>
-                        </div>
-                        <Switch id="cta" defaultChecked />
+                      <div className="space-y-2">
+                        <Label htmlFor="product">Product</Label>
+                        {isLoadingProducts ? (
+                          <Skeleton className="h-10 w-full" />
+                        ) : (
+                          <Select
+                            value={selectedProductId}
+                            onValueChange={setSelectedProductId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a product" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {productBriefs.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                       
-                      <div>
-                        <div className="flex justify-between mb-2">
-                          <Label htmlFor="creativity">Creativity</Label>
-                          <span className="text-xs">70%</span>
-                        </div>
-                        <Slider defaultValue={[70]} max={100} step={1} />
+                      <div className="space-y-2">
+                        <Label htmlFor="platform">Platform</Label>
+                        <MultiSelect
+                          items={platformOptions}
+                          selected={selectedPlatforms}
+                          onChange={setSelectedPlatforms}
+                          placeholder="Select platforms"
+                          disabled={isLoadingProducts}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="angle">Angle</Label>
+                        <Select
+                          value={selectedAngle}
+                          onValueChange={setSelectedAngle}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select angle (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {angleOptions.map((angle) => (
+                              <SelectItem key={angle.value} value={angle.value}>
+                                {angle.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="language">Language</Label>
+                        <SearchableSelect
+                          items={languageOptions}
+                          value={selectedLanguage}
+                          onChange={setSelectedLanguage}
+                          placeholder="Search language"
+                          disabled={isLoadingProducts}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between space-x-2">
+                        <Label htmlFor="cta" className="cursor-pointer">Include CTA</Label>
+                        <Switch
+                          id="cta"
+                          checked={includeCta}
+                          onCheckedChange={setIncludeCta}
+                          disabled={isLoadingProducts}
+                        />
                       </div>
                     </div>
-                  </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="image" className="space-y-4 pt-4">
@@ -167,9 +351,22 @@ const Creator: React.FC = () => {
               </Tabs>
             </CardContent>
             <CardFooter>
-              <Button className="w-full alchemy-gradient">
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate
+              <Button 
+                className="w-full alchemy-gradient" 
+                onClick={handleGenerate}
+                disabled={!isFormValid || isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate
+                  </>
+                )}
               </Button>
             </CardFooter>
           </Card>
