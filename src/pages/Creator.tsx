@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Sparkles, 
@@ -300,21 +299,14 @@ const Creator: React.FC = () => {
                       
                       <div className="space-y-2">
                         <Label htmlFor="angle">Angle</Label>
-                        <Select
+                        <Textarea
+                          id="angle"
                           value={selectedAngle}
-                          onValueChange={setSelectedAngle}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select angle (optional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {angleOptions.map((angle) => (
-                              <SelectItem key={angle.value} value={angle.value}>
-                                {angle.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          onChange={(e) => setSelectedAngle(e.target.value)}
+                          placeholder="Enter marketing angle (optional)"
+                          className="resize-y min-h-[80px]"
+                          disabled={isLoadingProducts}
+                        />
                       </div>
                       
                       <div className="space-y-2">
@@ -334,7 +326,7 @@ const Creator: React.FC = () => {
                           id="cta"
                           checked={includeCta}
                           onCheckedChange={setIncludeCta}
-                          disabled={isLoadingProducts}
+                          disabled={isLoadingProducts || !selectedProductId}
                         />
                       </div>
                     </div>
