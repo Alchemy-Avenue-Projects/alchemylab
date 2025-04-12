@@ -14,7 +14,7 @@ export const Logo: React.FC<LogoProps> = ({ className = "h-8 w-8", showText = tr
         alt="AlchemyLab Logo" 
         className={className}
       />
-      {showText && <span className="font-bold text-xl">AlchemyLab</span>}
+      {showText && <span className="font-bold text-xl whitespace-nowrap">AlchemyLab</span>}
     </div>
   );
 };

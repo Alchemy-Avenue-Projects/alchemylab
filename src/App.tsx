@@ -14,6 +14,12 @@ import { Toaster as SonnerToaster } from "./components/ui/sonner";
 import AppLayout from '@/components/layout/AppLayout';
 import Homepage from './pages/Homepage';
 import Team from './pages/Team';
+import Analytics from './pages/Analytics';
+import Campaigns from './pages/Campaigns';
+import AIInsights from './pages/AIInsights';
+import Media from './pages/Media';
+import Creator from './pages/Creator';
+import Notifications from './pages/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -41,6 +47,12 @@ function App() {
               {/* App Routes */}
               <Route path="/app" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
+                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="ai-insights" element={<AIInsights />} />
+                <Route path="media" element={<Media />} />
+                <Route path="creator" element={<Creator />} />
+                <Route path="notifications" element={<Notifications />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="team" element={<Team />} />
               </Route>
