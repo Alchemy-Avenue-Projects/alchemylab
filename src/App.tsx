@@ -20,6 +20,8 @@ import AIInsights from './pages/AIInsights';
 import Media from './pages/Media';
 import Creator from './pages/Creator';
 import Notifications from './pages/Notifications';
+import Features from './pages/Features';
+import Pricing from './pages/Pricing';
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,8 @@ function App() {
             <Routes>
               {/* Landing Routes */}
               <Route path="/" element={<Homepage />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/pricing" element={<Pricing />} />
               
               {/* App Routes */}
               <Route path="/app" element={<AppLayout />}>
@@ -74,3 +78,4 @@ function App() {
 }
 
 export default App;
+

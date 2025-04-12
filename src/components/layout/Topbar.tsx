@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Menu } from "lucide-react";
 
@@ -31,7 +31,7 @@ const Topbar: React.FC = () => {
             </Button>
           )}
           <Link
-            to="/"
+            to="/app"
             className="flex items-center space-x-2 font-bold text-xl"
           >
             <Logo className="h-6 w-6" showText={!isMobile} />
