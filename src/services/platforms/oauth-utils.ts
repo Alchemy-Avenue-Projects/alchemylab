@@ -3,7 +3,7 @@ import { Platform } from '@/types/platforms';
 
 // Define our app configuration values directly since we can't use process.env in the browser
 const CONFIG = {
-  FACEBOOK_CLIENT_ID: 'YOUR_FB_APP_ID', // Replace with your actual client ID
+  FACEBOOK_CLIENT_ID: '9352206568161021',
   GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID',
   LINKEDIN_CLIENT_ID: 'YOUR_LINKEDIN_CLIENT_ID',
   TIKTOK_CLIENT_ID: 'YOUR_TIKTOK_APP_ID',
