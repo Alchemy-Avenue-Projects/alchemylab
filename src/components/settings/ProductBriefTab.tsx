@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2, AlertCircle } from "lucide-react";
@@ -26,29 +25,37 @@ const ProductBriefTab: React.FC = () => {
     handleSave
   } = useProductBriefService();
 
-  // Reset timeout state when loading changes
   useEffect(() => {
     if (!isLoading) {
       setLoadingTimedOut(false);
     }
   }, [isLoading]);
 
-  // Add a timeout to detect stuck loading state
   useEffect(() => {
     if (isLoading) {
       const timeoutId = setTimeout(() => {
         console.log("Loading timeout reached for product briefs");
         setLoadingTimedOut(true);
-      }, 3000); // Reduced from 5000 to 3000ms
+      }, 3000);
       
       return () => clearTimeout(timeoutId);
     }
   }, [isLoading]);
 
-  // Force-show content if loading gets stuck or when we've attempted a fetch
+  const handleAccountToggleWrapper = (productIndex: number, accountId: string) => {
+    handleAccountToggle(productIndex, accountId);
+  };
+
+  const handleSelectAllWrapper = (productIndex: number, select: boolean) => {
+    handleSelectAll(productIndex, select, connections);
+  };
+
+  const handleSaveProduct = (index: number) => {
+    handleSave(connections, index);
+  };
+
   const showContent = !isLoading || loadingTimedOut || hasAttemptedFetch;
 
-  // Show loading skeleton on first load only
   if (isLoading && !loadingTimedOut && !hasAttemptedFetch) {
     return (
       <div className="space-y-6">
@@ -62,7 +69,6 @@ const ProductBriefTab: React.FC = () => {
     );
   }
 
-  // Show warning if loading timed out
   const renderLoadingWarning = () => {
     if (loadingTimedOut && isLoading) {
       return (
@@ -76,10 +82,6 @@ const ProductBriefTab: React.FC = () => {
       );
     }
     return null;
-  };
-
-  const handleSaveProduct = (index: number) => {
-    handleSave(connections, index);
   };
 
   return (
@@ -100,8 +102,8 @@ const ProductBriefTab: React.FC = () => {
             connections={connections}
             onRemove={handleRemoveProduct}
             onInputChange={handleInputChange}
-            onAccountToggle={handleAccountToggle}
-            onSelectAll={handleSelectAll}
+            onAccountToggle={handleAccountToggleWrapper}
+            onSelectAll={handleSelectAllWrapper}
             onSave={handleSaveProduct}
             isSaving={isSaving}
           />

@@ -3,9 +3,12 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PlatformConnection } from "@/types/platforms";
 
 interface AccountSelectionListProps {
-  connections: any[];
+  connections: PlatformConnection[];
   selectedAccounts: string[];
   productIndex: number;
   onAccountToggle: (productIndex: number, accountId: string) => void;
@@ -19,6 +22,11 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
   onAccountToggle,
   onSelectAll,
 }) => {
+  // Filter connections to only include ad platforms
+  const adConnections = connections.filter(conn => 
+    ['facebook', 'google', 'linkedin', 'tiktok', 'pinterest'].includes(conn.platform)
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -28,7 +36,7 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
             variant="outline" 
             size="sm"
             onClick={() => onSelectAll(productIndex, true)}
-            disabled={connections.length === 0}
+            disabled={adConnections.length === 0}
           >
             Select All
           </Button>
@@ -36,7 +44,7 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
             variant="outline" 
             size="sm"
             onClick={() => onSelectAll(productIndex, false)}
-            disabled={connections.length === 0 || selectedAccounts.length === 0}
+            disabled={adConnections.length === 0 || selectedAccounts.length === 0}
           >
             Clear All
           </Button>
@@ -44,8 +52,8 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
       </div>
       
       <div className="grid gap-3">
-        {connections && connections.length > 0 ? (
-          connections.map(connection => (
+        {adConnections && adConnections.length > 0 ? (
+          adConnections.map(connection => (
             <div key={connection.id} className="flex items-center space-x-2">
               <Checkbox 
                 id={`${productIndex}-${connection.id}`}
@@ -61,9 +69,12 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
             </div>
           ))
         ) : (
-          <div className="text-sm text-muted-foreground">
-            No ad accounts connected. Connect accounts in the Integrations tab.
-          </div>
+          <Alert variant="warning" className="bg-amber-50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm text-muted-foreground">
+              No ad accounts connected. Connect accounts in the Integrations tab.
+            </AlertDescription>
+          </Alert>
         )}
       </div>
     </div>

@@ -6,6 +6,7 @@ import { ProductBriefFormData } from "./types";
 import { createEmptyProduct, mapBriefToFormData, handleInputChangeHelper, handleAccountToggleHelper, handleSelectAllHelper } from "./utils/productBriefUtils";
 import { fetchProductBriefsFromApi, fetchProductBriefAccounts } from "./api/productBriefApi";
 import { useSaveProductBrief } from "./hooks/useSaveProductBrief";
+import { PlatformConnection } from "@/types/platforms";
 
 export const useProductBriefService = () => {
   const { toast } = useToast();
@@ -93,11 +94,11 @@ export const useProductBriefService = () => {
     setProducts(handleAccountToggleHelper({ productIndex, accountId, products }));
   };
 
-  const handleSelectAll = (productIndex: number, select: boolean) => {
-    setProducts(handleSelectAllHelper({ productIndex, select, products, connections: [] }));
+  const handleSelectAll = (productIndex: number, select: boolean, connections: PlatformConnection[]) => {
+    setProducts(handleSelectAllHelper({ productIndex, select, products, connections }));
   };
 
-  const handleSave = async (connections: any[], productIndex?: number) => {
+  const handleSave = async (connections: PlatformConnection[], productIndex?: number) => {
     if (!user) {
       toast({
         title: "Authentication Error",

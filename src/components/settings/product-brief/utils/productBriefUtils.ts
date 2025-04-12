@@ -1,6 +1,7 @@
 
 import { ProductBriefFormData, InputChangeParams, ToggleAccountParams, SelectAllAccountsParams } from "../types";
 import { fetchProductBriefAccounts } from "../api/productBriefApi";
+import { PlatformConnection } from "@/types/platforms";
 
 export const createEmptyProduct = (): ProductBriefFormData => ({
   name: "",
@@ -77,10 +78,15 @@ export const handleSelectAllHelper = ({
   products, 
   connections 
 }: SelectAllAccountsParams): ProductBriefFormData[] => {
+  // Filter connections to only include ad platforms
+  const adConnections = connections.filter(conn => 
+    ['facebook', 'google', 'linkedin', 'tiktok', 'pinterest'].includes(conn.platform)
+  );
+  
+  const allAccountIds = adConnections.map(conn => conn.id);
+  
   return products.map((product, index) => {
     if (index !== productIndex) return product;
-    
-    const allAccountIds = connections.map(conn => conn.id);
     
     return {
       ...product,
