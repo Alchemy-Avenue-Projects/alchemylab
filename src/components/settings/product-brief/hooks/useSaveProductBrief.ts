@@ -27,7 +27,9 @@ export const useSaveProductBrief = () => {
         await deleteProductAccounts(productId);
         
         // Insert new account associations
-        await saveProductAccounts(productId, product.selectedAccounts);
+        if (product.selectedAccounts.length > 0) {
+          await saveProductAccounts(productId, product.selectedAccounts);
+        }
       }
       
       return productId;
@@ -38,7 +40,7 @@ export const useSaveProductBrief = () => {
   };
 
   const handleSaveProduct = async (
-    products: SaveProductParams["product"][],
+    products: ProductBriefFormData[],
     connections: any[],
     userId: string | undefined,
     productIndex?: number
@@ -49,7 +51,7 @@ export const useSaveProductBrief = () => {
         description: "You must be logged in to save product briefs.",
         variant: "destructive"
       });
-      return;
+      return null;
     }
     
     setIsSaving(true);
@@ -58,16 +60,18 @@ export const useSaveProductBrief = () => {
       if (productIndex !== undefined) {
         // Save just one product
         const product = products[productIndex];
-        if (!validateProductBrief(product)) return;
+        if (!validateProductBrief(product)) {
+          toast({
+            title: "Validation Error",
+            description: "Product name is required.",
+            variant: "destructive"
+          });
+          return null;
+        }
         
         const productId = await saveProduct({ product, connections, userId });
         
         if (productId) {
-          toast({
-            title: "Success",
-            description: `Product brief "${product.name}" saved successfully.`
-          });
-          
           // Return the updated product with ID
           return {
             updatedProducts: products.map((p, i) => 
@@ -94,7 +98,7 @@ export const useSaveProductBrief = () => {
             description: "All product names are required.",
             variant: "destructive"
           });
-          return;
+          return null;
         }
         
         // For each product, insert or update in the database
@@ -107,11 +111,6 @@ export const useSaveProductBrief = () => {
             updatedProducts[i] = { ...product, id: productId };
           }
         }
-        
-        toast({
-          title: "Success",
-          description: `Saved ${products.length} product ${products.length === 1 ? 'brief' : 'briefs'}.`
-        });
         
         return { updatedProducts, savedIndex: null };
       }
@@ -126,6 +125,8 @@ export const useSaveProductBrief = () => {
     } finally {
       setIsSaving(false);
     }
+    
+    return null;
   };
 
   return {

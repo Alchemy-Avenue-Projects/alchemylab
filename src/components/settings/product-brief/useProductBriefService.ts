@@ -1,9 +1,10 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProductBriefFormData } from "./types";
 import { createEmptyProduct, mapBriefToFormData, handleInputChangeHelper, handleAccountToggleHelper, handleSelectAllHelper } from "./utils/productBriefUtils";
-import { fetchProductBriefsFromApi } from "./api/productBriefApi";
+import { fetchProductBriefsFromApi, fetchProductBriefAccounts } from "./api/productBriefApi";
 import { useSaveProductBrief } from "./hooks/useSaveProductBrief";
 
 export const useProductBriefService = () => {
@@ -32,7 +33,10 @@ export const useProductBriefService = () => {
         console.log("Found product briefs:", productBriefs.length);
         // For each product brief, get its associated accounts
         const productsWithAccounts = await Promise.all(
-          productBriefs.map(brief => mapBriefToFormData(brief))
+          productBriefs.map(async (brief) => {
+            const formData = await mapBriefToFormData(brief);
+            return formData;
+          })
         );
         
         setProducts(productsWithAccounts);
@@ -94,10 +98,40 @@ export const useProductBriefService = () => {
   };
 
   const handleSave = async (connections: any[], productIndex?: number) => {
-    const result = await handleSaveProduct(products, connections, user?.id, productIndex);
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to save product briefs.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    if (result) {
-      setProducts(result.updatedProducts);
+    try {
+      const result = await handleSaveProduct(products, connections, user?.id, productIndex);
+      
+      if (result) {
+        setProducts(result.updatedProducts);
+        
+        if (productIndex !== undefined) {
+          toast({
+            title: "Success",
+            description: `Product brief "${products[productIndex].name}" saved successfully.`
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: `All product briefs saved successfully.`
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving product briefs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save product briefs.",
+        variant: "destructive"
+      });
     }
   };
 

@@ -28,6 +28,7 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
             variant="outline" 
             size="sm"
             onClick={() => onSelectAll(productIndex, true)}
+            disabled={connections.length === 0}
           >
             Select All
           </Button>
@@ -35,6 +36,7 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
             variant="outline" 
             size="sm"
             onClick={() => onSelectAll(productIndex, false)}
+            disabled={connections.length === 0 || selectedAccounts.length === 0}
           >
             Clear All
           </Button>
@@ -42,7 +44,7 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
       </div>
       
       <div className="grid gap-3">
-        {connections.length > 0 ? (
+        {connections && connections.length > 0 ? (
           connections.map(connection => (
             <div key={connection.id} className="flex items-center space-x-2">
               <Checkbox 
