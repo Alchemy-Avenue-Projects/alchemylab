@@ -1,11 +1,45 @@
 
 project_id = "yiqfsetkcnvudalyntvw"
 
-[functions.oauth-callback]
-verify_jwt = true
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
 
-[functions.refresh-token]
-verify_jwt = true
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
 
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+
+[realtime]
+enabled = true
+
+[functions]
 [functions.invite-team-member]
 verify_jwt = true
+[functions.facebook-oauth-callback]
+verify_jwt = false
+[functions.oauth-callback]
+verify_jwt = false
+[functions.refresh-token]
+verify_jwt = false

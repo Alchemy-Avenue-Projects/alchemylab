@@ -1,105 +1,92 @@
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from "@/components/ui/use-toast"
+import { OrganizationProvider } from './contexts/OrganizationContext';
+import { ProfileProvider } from './contexts/ProfileContext';
+import { PlatformsProvider } from './contexts/PlatformsContext';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Settings from './pages/Settings';
+import OAuthCallback from './pages/OAuthCallback';
+import AuthRequired from './components/AuthRequired';
+import PublicLayout from './layouts/PublicLayout';
+import AppLayout from './layouts/AppLayout';
+import Pricing from './pages/Pricing';
+import NotFound from './pages/NotFound';
+import ComingSoon from './pages/ComingSoon';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import Logout from './pages/Logout';
+import AdAccount from './pages/AdAccount';
+import AuthCallback from './pages/api/AuthCallback';
 
-import React from 'react';
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
-import Homepage from "@/pages/Homepage";  // Import Homepage
-import Index from "@/pages/Index";
-import Features from "@/pages/Features";
-import Pricing from "@/pages/Pricing";
-import Auth from "@/pages/Auth";
-import OAuthCallback from "@/pages/OAuthCallback";
-import AppLayout from "@/components/layout/AppLayout";
-import Dashboard from "@/pages/Dashboard";
-import NotFound from "@/pages/NotFound";
-import Campaigns from "@/pages/Campaigns";
-import Analytics from "@/pages/Analytics";
-import AIInsights from "@/pages/AIInsights";
-import Creator from "@/pages/Creator";
-import Media from "@/pages/Media";
-import Notifications from "@/pages/Notifications";
-import Team from "@/pages/Team";
-import Settings from "@/pages/Settings";
-import AnalyticsData from './pages/AnalyticsData';
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Homepage />,  // Use Homepage instead of Index
-    errorElement: <NotFound />
-  },
-  {
-    path: "/features",
-    element: <Features />
-  },
-  {
-    path: "/pricing",
-    element: <Pricing />
-  },
-  {
-    path: "/auth",
-    element: <Auth />
-  },
-  {
-    path: "/auth/callback",
-    element: <OAuthCallback />
-  },
-  {
-    path: "/app",
-    element: <AppLayout />,
-    children: [
-      {
-        index: true,
-        element: <Dashboard />
-      },
-      {
-        path: "campaigns",
-        element: <Campaigns />
-      },
-      {
-        path: "analytics",
-        element: <Analytics />
-      },
-      {
-        path: "analytics-data",
-        element: <AnalyticsData />
-      },
-      {
-        path: "ai-insights",
-        element: <AIInsights />
-      },
-      {
-        path: "creator",
-        element: <Creator />
-      },
-      {
-        path: "media",
-        element: <Media />
-      },
-      {
-        path: "notifications",
-        element: <Notifications />
-      },
-      {
-        path: "team",
-        element: <Team />
-      },
-      {
-        path: "settings",
-        element: <Settings />
-      }
-    ]
-  }
-]);
+const queryClient = new QueryClient();
 
 function App() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading delay
+    setTimeout(() => {
+      setLoading(false);
+    }, 500);
+  }, []);
+
   return (
-    <React.StrictMode>
-      <RouterProvider router={router} />
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ThemeProvider
+          defaultTheme="system"
+          storageKey="alchemy-theme"
+        >
+          <ToastProvider>
+            <AuthProvider>
+              <OrganizationProvider>
+                <ProfileProvider>
+                  <PlatformsProvider>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<PublicLayout />}>
+                        <Route index element={<ComingSoon />} />
+                        <Route path="login" element={<Login />} />
+                        <Route path="register" element={<Register />} />
+                        <Route path="pricing" element={<Pricing />} />
+                        <Route path="forgot-password" element={<ForgotPassword />} />
+                        <Route path="reset-password" element={<ResetPassword />} />
+                        <Route path="verify-email" element={<VerifyEmail />} />
+                        <Route path="logout" element={<Logout />} />
+                      </Route>
+
+                      {/* App Routes */}
+                      <Route path="/app" element={<AuthRequired><AppLayout /></AuthRequired>}>
+                        <Route index element={<Dashboard />} />
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="ad-account/:id" element={<AdAccount />} />
+                      </Route>
+
+                      {/* OAuth Callback */}
+                      <Route path="/oauth/callback" element={<OAuthCallback />} />
+
+                      {/* Catch All - 404 */}
+                      <Route path="*" element={<NotFound />} />
+                      
+                      {/* Add new API route handling */}
+                      <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
+                    </Routes>
+                  </PlatformsProvider>
+                </ProfileProvider>
+              </OrganizationProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
 export default App;
-
