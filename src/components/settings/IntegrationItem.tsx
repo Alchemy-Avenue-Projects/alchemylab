@@ -3,6 +3,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface IntegrationItemProps {
   name: string;
@@ -23,6 +24,32 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
   onDisconnect,
   isLoading = false
 }) => {
+  const handleConnect = () => {
+    try {
+      if (onConnect) {
+        onConnect();
+      }
+    } catch (error) {
+      console.error(`Error connecting to ${name}:`, error);
+      toast.error(`Connection Error`, {
+        description: `Failed to connect to ${name.toLowerCase()}. Please try again.`
+      });
+    }
+  };
+
+  const handleDisconnect = () => {
+    try {
+      if (onDisconnect) {
+        onDisconnect();
+      }
+    } catch (error) {
+      console.error(`Error disconnecting from ${name}:`, error);
+      toast.error(`Disconnection Error`, {
+        description: `Failed to disconnect from ${name.toLowerCase()}. Please try again.`
+      });
+    }
+  };
+
   return (
     <div className="flex justify-between items-center p-4 border rounded-md bg-card shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center">
@@ -40,7 +67,7 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={onDisconnect}
+            onClick={handleDisconnect}
             disabled={isLoading}
           >
             {isLoading ? (
@@ -54,7 +81,7 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
       ) : (
         <Button 
           className="bg-primary hover:bg-primary/90 text-white"
-          onClick={onConnect}
+          onClick={handleConnect}
           disabled={isLoading}
         >
           {isLoading ? (

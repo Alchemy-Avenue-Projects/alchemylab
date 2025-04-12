@@ -11,6 +11,9 @@ import OAuthCallback from './pages/OAuthCallback';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/api/AuthCallback';
 import { Toaster as SonnerToaster } from "./components/ui/sonner";
+import AppLayout from '@/components/layout/AppLayout';
+import Homepage from './pages/Homepage';
+import LandingLayout from '@/components/layout/LandingLayout';
 
 const queryClient = new QueryClient();
 
@@ -32,11 +35,11 @@ function App() {
             <Toaster />
             <SonnerToaster />
             <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<div>Home Page</div>} />
+              {/* Landing Routes */}
+              <Route path="/" element={<Homepage />} />
               
               {/* App Routes */}
-              <Route path="/app">
+              <Route path="/app" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

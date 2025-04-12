@@ -23,22 +23,22 @@ export const generateOAuthUrl = (platform: Platform): string => {
   switch (platform) {
     case 'facebook':
       // Direct Facebook OAuth flow using our custom API route
-      return `https://www.facebook.com/v22.0/dialog/oauth?client_id=${CONFIG.FACEBOOK_CLIENT_ID}&redirect_uri=${facebookRedirectUri}&state=${platform}&scope=ads_management,ads_read`;
+      return `https://www.facebook.com/v22.0/dialog/oauth?client_id=${CONFIG.FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(facebookRedirectUri)}&state=${platform}&scope=ads_management,ads_read`;
     
     case 'google':
-      return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=https://www.googleapis.com/auth/adwords&state=${platform}&access_type=offline&prompt=consent`;
+      return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/adwords&state=${platform}&access_type=offline&prompt=consent`;
     
     case 'linkedin':
-      return `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${CONFIG.LINKEDIN_CLIENT_ID}&redirect_uri=${redirectUri}&state=${platform}&scope=r_ads,r_ads_reporting`;
+      return `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${CONFIG.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${platform}&scope=r_ads,r_ads_reporting`;
     
     case 'tiktok':
-      return `https://ads.tiktok.com/marketing_api/auth?app_id=${CONFIG.TIKTOK_CLIENT_ID}&state=${platform}&redirect_uri=${redirectUri}&response_type=code`;
+      return `https://ads.tiktok.com/marketing_api/auth?app_id=${CONFIG.TIKTOK_CLIENT_ID}&state=${platform}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
     
     case 'pinterest':
-      return `https://www.pinterest.com/oauth/?client_id=${CONFIG.PINTEREST_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=ads:read,ads:write&state=${platform}`;
+      return `https://www.pinterest.com/oauth/?client_id=${CONFIG.PINTEREST_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=ads:read,ads:write&state=${platform}`;
     
     case 'google_analytics':
-      return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=https://www.googleapis.com/auth/analytics.readonly&state=${platform}&access_type=offline&prompt=consent`;
+      return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/analytics.readonly&state=${platform}&access_type=offline&prompt=consent`;
     
     case 'mixpanel':
       // For now, we'll just return an empty string as this would need a real client ID
