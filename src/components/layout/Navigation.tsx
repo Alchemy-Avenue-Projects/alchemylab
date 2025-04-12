@@ -6,7 +6,6 @@ import {
   Home,
   LayoutGrid,
   MessageSquareDashed,
-  FileBarChart,
   Image,
   Bell,
   Settings,
@@ -51,11 +50,6 @@ const navItems: NavItem[] = [
     title: "Creator",
     href: "/app/creator",
     icon: <MessageSquareDashed className="h-5 w-5" />,
-  },
-  {
-    title: "Notifications",
-    href: "/app/notifications", 
-    icon: <Bell className="h-5 w-5" />,
   },
   {
     title: "Team",

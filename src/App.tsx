@@ -13,7 +13,7 @@ import AuthCallback from './pages/api/AuthCallback';
 import { Toaster as SonnerToaster } from "./components/ui/sonner";
 import AppLayout from '@/components/layout/AppLayout';
 import Homepage from './pages/Homepage';
-import LandingLayout from '@/components/layout/LandingLayout';
+import Team from './pages/Team';
 
 const queryClient = new QueryClient();
 
@@ -42,6 +42,7 @@ function App() {
               <Route path="/app" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="team" element={<Team />} />
               </Route>
 
               {/* OAuth Callback */}
