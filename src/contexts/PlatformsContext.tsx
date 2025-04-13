@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Platform, PlatformConnection } from '@/types/platforms';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,17 +82,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error(`OAuth URL generation failed for ${platform}`);
       }
       
-      // Special handling for Facebook to prevent iframe/embedded context issues
-      if (platform === 'facebook') {
-        window.open(
-          oauthUrl,
-          "_blank",
-          "noopener,noreferrer"
-        );
-        return;
-      }
-      
-      // For other platforms, use the standard redirect
+      // Redirect to the OAuth URL for all platforms (including Facebook)
       window.location.href = oauthUrl;
     } catch (err) {
       console.error(`Error connecting to ${platform}:`, err);

@@ -16,13 +16,10 @@ export const generateOAuthUrl = (platform: Platform): string => {
   // Use a central redirect URI to handle all OAuth callbacks
   const redirectUri = `${window.location.origin}/oauth/callback`;
   
-  // For Facebook, we'll use a direct callback to our API route
-  const facebookRedirectUri = `${window.location.origin}/api/auth/callback/facebook`;
-  
   switch (platform) {
     case 'facebook':
-      // Use a more comprehensive scope for Facebook
-      return `https://www.facebook.com/v22.0/dialog/oauth?client_id=${CONFIG.FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(facebookRedirectUri)}&state=${platform}&scope=ads_management,ads_read,pages_show_list&response_type=code`;
+      // Use same callback URL pattern as other platforms
+      return `https://www.facebook.com/v22.0/dialog/oauth?client_id=${CONFIG.FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${platform}&scope=ads_management,ads_read,pages_show_list&response_type=code`;
     
     case 'google':
       return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/adwords&state=${platform}&access_type=offline&prompt=consent`;

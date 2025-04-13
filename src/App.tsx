@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import OAuthCallback from './pages/OAuthCallback';
 import NotFound from './pages/NotFound';
-import AuthCallback from './pages/api/AuthCallback';
 import { Toaster as SonnerToaster } from "./components/ui/sonner";
 import AppLayout from '@/components/layout/AppLayout';
 import Homepage from './pages/Homepage';
@@ -65,7 +64,7 @@ function App() {
 
               {/* OAuth Callbacks */}
               <Route path="/oauth/callback" element={<OAuthCallback />} />
-              <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
+              <Route path="/api/auth/callback/:provider" element={<OAuthCallback />} />
               
               {/* Catch All - 404 */}
               <Route path="*" element={<NotFound />} />
