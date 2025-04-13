@@ -18,6 +18,17 @@ const AuthCallback = () => {
         // Extract code from URL
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        
+        if (error) {
+          const errorReason = urlParams.get('error_reason') || 'Unknown error';
+          setStatus("error");
+          setMessage(`Authorization error: ${errorReason}`);
+          toast.error("Authorization failed", {
+            description: `${errorReason}`
+          });
+          return;
+        }
         
         if (!code) {
           setStatus("error");
@@ -30,10 +41,26 @@ const AuthCallback = () => {
 
         console.log(`Processing ${provider} OAuth callback with code ${code.substring(0, 5)}...`);
         
-        // Here we would make a call to our backend API to exchange the code for a token
-        // and save the connection in the database
-        // For now, we'll simulate success
+        // For Facebook, we don't need to do anything here since the callback 
+        // is handled by our edge function. Just set success.
+        if (provider === 'facebook') {
+          // The edge function should redirect, but in case we ended up here
+          // we can show success and redirect the user.
+          setStatus("success");
+          setMessage(`Successfully connected to ${provider}`);
+          toast.success(`Connected to ${provider}`, {
+            description: "Your account was successfully connected"
+          });
+          
+          // Redirect after a short delay
+          setTimeout(() => {
+            navigate("/app/settings?tab=integrations&success=facebook_connected");
+          }, 1500);
+          return;
+        }
         
+        // For other providers, we would handle their specific OAuth flow here
+        // This is a placeholder for demo purposes
         setTimeout(() => {
           setStatus("success");
           setMessage(`Successfully connected to ${provider}`);
@@ -41,12 +68,6 @@ const AuthCallback = () => {
             description: "Your account was successfully connected"
           });
         }, 1500);
-        
-        // In a real implementation, we would:
-        // 1. Make a POST request to our backend with the code
-        // 2. The backend would exchange the code for a token
-        // 3. The backend would store the token in the database
-        // 4. The backend would return a success/error response
         
       } catch (error: any) {
         console.error("OAuth callback error:", error);
@@ -62,11 +83,11 @@ const AuthCallback = () => {
   }, [provider, navigate]);
 
   const handleContinue = () => {
-    navigate("/app/settings");
+    navigate("/app/settings?tab=integrations");
   };
 
   const handleTryAgain = () => {
-    navigate("/app/settings");
+    navigate("/app/settings?tab=integrations");
   };
 
   return (

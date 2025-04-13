@@ -61,14 +61,12 @@ function App() {
                 <Route path="team" element={<Team />} />
               </Route>
 
-              {/* OAuth Callback */}
+              {/* OAuth Callbacks */}
               <Route path="/oauth/callback" element={<OAuthCallback />} />
-
+              <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
+              
               {/* Catch All - 404 */}
               <Route path="*" element={<NotFound />} />
-              
-              {/* Add new API route handling */}
-              <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
             </Routes>
           </PlatformsProvider>
         </AuthProvider>
@@ -78,4 +76,3 @@ function App() {
 }
 
 export default App;
-

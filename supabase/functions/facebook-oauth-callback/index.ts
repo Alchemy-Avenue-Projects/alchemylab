@@ -12,6 +12,23 @@ const FACEBOOK_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
+// Add more detailed logging for debugging
+const logInfo = (message: string, data?: any) => {
+  if (data) {
+    console.log(`INFO: ${message}`, data);
+  } else {
+    console.log(`INFO: ${message}`);
+  }
+};
+
+const logError = (message: string, error?: any) => {
+  if (error) {
+    console.error(`ERROR: ${message}`, error);
+  } else {
+    console.error(`ERROR: ${message}`);
+  }
+};
+
 // Handle CORS preflight requests
 const handlePreflight = () => {
   return new Response(null, { headers: corsHeaders, status: 204 });
@@ -23,7 +40,9 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
     throw new Error("Missing Facebook app credentials");
   }
 
-  const tokenUrl = new URL("https://graph.facebook.com/v18.0/oauth/access_token");
+  logInfo(`Exchanging code for token with redirect URI: ${redirectUri}`);
+
+  const tokenUrl = new URL("https://graph.facebook.com/v22.0/oauth/access_token");
   tokenUrl.searchParams.append("client_id", FACEBOOK_APP_ID);
   tokenUrl.searchParams.append("client_secret", FACEBOOK_APP_SECRET);
   tokenUrl.searchParams.append("redirect_uri", redirectUri);
@@ -33,10 +52,15 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
   
   if (!response.ok) {
     const errorText = await response.text();
+    logError(`Token exchange failed: ${response.status}`, errorText);
     throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
+  logInfo("Successfully exchanged code for token", { 
+    tokenType: data.token_type, 
+    expiresIn: data.expires_in 
+  });
   
   return {
     accessToken: data.access_token,
@@ -47,16 +71,20 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
 
 // Fetch user's Facebook ad accounts
 const fetchAdAccounts = async (accessToken: string) => {
-  const url = `https://graph.facebook.com/v18.0/me/adaccounts?fields=id,name,account_status,currency,timezone_name&access_token=${accessToken}`;
+  logInfo("Fetching ad accounts");
+  
+  const url = `https://graph.facebook.com/v22.0/me/adaccounts?fields=id,name,account_status,currency,timezone_name&access_token=${accessToken}`;
   
   const response = await fetch(url);
   
   if (!response.ok) {
     const errorText = await response.text();
+    logError(`Failed to fetch ad accounts: ${response.status}`, errorText);
     throw new Error(`Failed to fetch ad accounts: ${response.status} - ${errorText}`);
   }
   
   const data = await response.json();
+  logInfo(`Successfully fetched ${data.data?.length || 0} ad accounts`);
   return data.data || [];
 };
 
@@ -67,16 +95,25 @@ const handleRequest = async (req: Request) => {
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
     const errorReason = url.searchParams.get('error_reason');
+    const state = url.searchParams.get('state') || '';
+    
+    logInfo("Received OAuth callback", { 
+      code: code ? `${code.substring(0, 5)}...` : null,
+      error,
+      errorReason,
+      state
+    });
     
     // Check for errors from Facebook
     if (error) {
-      console.error(`Facebook OAuth error: ${error} - ${errorReason}`);
+      logError(`Facebook OAuth error: ${error} - ${errorReason}`);
       // Redirect to the frontend with error
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=facebook_auth_failed&reason=${errorReason}`, 302);
     }
     
     // Verify we have a code
     if (!code) {
+      logError("Missing authorization code");
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_code`, 302);
     }
     
@@ -91,9 +128,11 @@ const handleRequest = async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
-      console.error("Auth error:", authError);
+      logError("Auth error or user not found", authError);
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=auth_required`, 302);
     }
+    
+    logInfo("Authenticated user", { id: user.id, email: user.email });
     
     // Get user's organization from profile
     const { data: userProfile, error: profileError } = await supabase
@@ -103,9 +142,11 @@ const handleRequest = async (req: Request) => {
       .maybeSingle();
     
     if (profileError || !userProfile?.organization_id) {
-      console.error("Profile error:", profileError);
+      logError("Profile error or missing organization", profileError);
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_organization`, 302);
     }
+    
+    logInfo("Found user organization", { organizationId: userProfile.organization_id });
     
     // Exchange code for token
     const redirectUri = `${url.origin}/api/auth/callback/facebook`;
@@ -114,9 +155,20 @@ const handleRequest = async (req: Request) => {
     // Fetch ad accounts
     const adAccounts = await fetchAdAccounts(tokenData.accessToken);
     
+    if (adAccounts.length === 0) {
+      logInfo("No ad accounts found for user");
+      return Response.redirect(`${url.origin}/app/settings?tab=integrations&warning=no_ad_accounts`, 302);
+    }
+    
     // Insert or update connections in platform_connections
     for (const account of adAccounts) {
       const accountId = account.id.replace('act_', '');
+      
+      logInfo("Processing ad account", { 
+        accountId, 
+        accountName: account.name,
+        status: account.account_status
+      });
       
       // First, check if this account connection already exists
       const { data: existingConnection } = await supabase
@@ -129,6 +181,7 @@ const handleRequest = async (req: Request) => {
       
       if (existingConnection) {
         // Update existing connection
+        logInfo("Updating existing platform connection", { id: existingConnection.id });
         await supabase
           .from('platform_connections')
           .update({
@@ -139,6 +192,7 @@ const handleRequest = async (req: Request) => {
           .eq('id', existingConnection.id);
       } else {
         // Create new connection
+        logInfo("Creating new platform connection");
         await supabase
           .from('platform_connections')
           .insert({
@@ -153,7 +207,7 @@ const handleRequest = async (req: Request) => {
           });
       }
       
-      // Also store in ad_accounts table for backward compatibility
+      // Also store in ad_accounts table per requirements
       // Check if the ad account already exists
       const { data: existingAdAccount } = await supabase
         .from('ad_accounts')
@@ -164,15 +218,19 @@ const handleRequest = async (req: Request) => {
       
       if (existingAdAccount) {
         // Update existing ad account
+        logInfo("Updating existing ad account", { id: existingAdAccount.id });
         await supabase
           .from('ad_accounts')
           .update({
             auth_token: tokenData.accessToken,
-            connected_at: new Date().toISOString()
+            refresh_token: tokenData.expiresIn ? 'facebook_refresh_not_applicable' : null,
+            connected_at: new Date().toISOString(),
+            account_name: account.name
           })
           .eq('id', existingAdAccount.id);
       } else {
         // Insert new ad account
+        logInfo("Creating new ad account");
         await supabase
           .from('ad_accounts')
           .insert({
@@ -180,17 +238,19 @@ const handleRequest = async (req: Request) => {
             account_id_on_platform: accountId,
             account_name: account.name,
             auth_token: tokenData.accessToken,
-            client_id: userProfile.organization_id
+            client_id: userProfile.organization_id,
+            connected_at: new Date().toISOString()
           });
       }
     }
     
+    logInfo("Facebook OAuth callback completed successfully");
     // Redirect to success page
     return Response.redirect(`${url.origin}/app/settings?tab=integrations&success=facebook_connected`, 302);
   } catch (error) {
-    console.error('Facebook OAuth callback error:', error);
+    logError('Facebook OAuth callback error:', error);
     const url = new URL(req.url);
-    return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=${encodeURIComponent(error.message)}`, 302);
+    return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=${encodeURIComponent(error.message || "Unknown error")}`, 302);
   }
 };
 
