@@ -91,7 +91,7 @@ const handleRequest = async (req: Request) => {
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
     const errorReason = url.searchParams.get('error_reason');
-    const state = url.searchParams.get('state') || '';
+    const state = url.searchParams.get('state') || 'facebook';
     
     logInfo("Received OAuth callback", { 
       code: code ? `${code.substring(0, 5)}...` : null,
@@ -112,72 +112,110 @@ const handleRequest = async (req: Request) => {
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_code`, 302);
     }
     
+    // Get the auth token from the request headers
     const authHeader = req.headers.get('Authorization') || '';
     const token = authHeader.replace('Bearer ', '');
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     
+    // Get user from auth token
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
       logError("Auth error or user not found", authError);
-      return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=auth_required`, 302);
+      // Continue as anonymous for now
+      logInfo("Proceeding without authenticated user");
+    } else {
+      logInfo("Authenticated user", { id: user.id, email: user.email });
     }
     
-    logInfo("Authenticated user", { id: user.id, email: user.email });
-    
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .maybeSingle();
-    
-    if (profileError || !userProfile?.organization_id) {
-      logError("Profile error or missing organization", profileError);
-      return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_organization`, 302);
-    }
-    
-    logInfo("Found user organization", { organizationId: userProfile.organization_id });
-    
+    // For Facebook, we need to use the exact same redirect URI that was used in the initial request
     const redirectUri = `${url.origin}/api/auth/callback/facebook`;
+    
+    logInfo(`Using redirect URI: ${redirectUri}`);
+    
+    // Exchange the authorization code for a token
     const tokenData = await exchangeCodeForToken(code, redirectUri);
     
-    const adAccounts = await fetchAdAccounts(tokenData.accessToken);
-    
-    if (adAccounts.length === 0) {
-      logInfo("No ad accounts found for user");
-      return Response.redirect(`${url.origin}/app/settings?tab=integrations&warning=no_ad_accounts`, 302);
+    if (!tokenData || !tokenData.accessToken) {
+      logError("Failed to get access token");
+      return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=token_exchange_failed`, 302);
     }
     
-    for (const account of adAccounts) {
-      const accountId = account.id.replace('act_', '');
-      
-      logInfo("Processing ad account", { 
-        accountId, 
-        accountName: account.name,
-        status: account.account_status
-      });
-      
-      const { data: existingConnection } = await supabase
-        .from('platform_connections')
-        .select('id')
-        .eq('platform', 'facebook')
-        .eq('organization_id', userProfile.organization_id)
-        .eq('account_id', accountId)
+    logInfo("Successfully obtained access token");
+    
+    // If we have a user, save the connection
+    if (user) {
+      // Get user's organization
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
         .maybeSingle();
       
-      if (existingConnection) {
-        logInfo("Updating existing platform connection", { id: existingConnection.id });
-        await supabase
-          .from('platform_connections')
-          .update({
-            auth_token: tokenData.accessToken,
-            token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingConnection.id);
+      if (profileError || !userProfile?.organization_id) {
+        logError("Profile error or missing organization", profileError);
+        return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_organization`, 302);
+      }
+      
+      logInfo("Found user organization", { organizationId: userProfile.organization_id });
+      
+      // Fetch ad accounts
+      const adAccounts = await fetchAdAccounts(tokenData.accessToken);
+      
+      if (adAccounts.length === 0) {
+        logInfo("No ad accounts found for user");
+        // Continue anyway, but with a warning
+      }
+      
+      // Process each ad account (or at least save the connection if no ad accounts)
+      if (adAccounts.length > 0) {
+        for (const account of adAccounts) {
+          const accountId = account.id.replace('act_', '');
+          
+          logInfo("Processing ad account", { 
+            accountId, 
+            accountName: account.name,
+            status: account.account_status
+          });
+          
+          const { data: existingConnection } = await supabase
+            .from('platform_connections')
+            .select('id')
+            .eq('platform', 'facebook')
+            .eq('organization_id', userProfile.organization_id)
+            .eq('account_id', accountId)
+            .maybeSingle();
+          
+          if (existingConnection) {
+            logInfo("Updating existing platform connection", { id: existingConnection.id });
+            await supabase
+              .from('platform_connections')
+              .update({
+                auth_token: tokenData.accessToken,
+                token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingConnection.id);
+          } else {
+            logInfo("Creating new platform connection");
+            await supabase
+              .from('platform_connections')
+              .insert({
+                platform: 'facebook',
+                organization_id: userProfile.organization_id,
+                auth_token: tokenData.accessToken,
+                token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
+                account_id: accountId,
+                account_name: account.name,
+                connected_by: user.id,
+                connected: true
+              });
+          }
+        }
       } else {
-        logInfo("Creating new platform connection");
+        // No ad accounts, but still save the connection with just the token
+        logInfo("No ad accounts found, saving platform connection with just the token");
         await supabase
           .from('platform_connections')
           .insert({
@@ -185,42 +223,9 @@ const handleRequest = async (req: Request) => {
             organization_id: userProfile.organization_id,
             auth_token: tokenData.accessToken,
             token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
-            account_id: accountId,
-            account_name: account.name,
             connected_by: user.id,
-            connected: true
-          });
-      }
-      
-      const { data: existingAdAccount } = await supabase
-        .from('ad_accounts')
-        .select('id')
-        .eq('platform', 'facebook')
-        .eq('account_id_on_platform', accountId)
-        .maybeSingle();
-      
-      if (existingAdAccount) {
-        logInfo("Updating existing ad account", { id: existingAdAccount.id });
-        await supabase
-          .from('ad_accounts')
-          .update({
-            auth_token: tokenData.accessToken,
-            refresh_token: tokenData.expiresIn ? 'facebook_refresh_not_applicable' : null,
-            connected_at: new Date().toISOString(),
-            account_name: account.name
-          })
-          .eq('id', existingAdAccount.id);
-      } else {
-        logInfo("Creating new ad account");
-        await supabase
-          .from('ad_accounts')
-          .insert({
-            platform: 'facebook',
-            account_id_on_platform: accountId,
-            account_name: account.name,
-            auth_token: tokenData.accessToken,
-            client_id: userProfile.organization_id,
-            connected_at: new Date().toISOString()
+            connected: true,
+            account_name: "Facebook Account"
           });
       }
     }

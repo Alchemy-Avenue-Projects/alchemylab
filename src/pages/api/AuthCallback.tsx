@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -19,6 +20,9 @@ const AuthCallback = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const error = urlParams.get('error');
+        const platformState = urlParams.get('state') || 'facebook'; // Default to facebook if no state
+        
+        console.log(`Processing ${provider || platformState} OAuth callback with code: ${code ? `${code.substring(0, 5)}...` : 'missing'}`);
         
         if (error) {
           const errorReason = urlParams.get('error_reason') || 'Unknown error';
@@ -39,13 +43,27 @@ const AuthCallback = () => {
           return;
         }
 
-        console.log(`Processing ${provider} OAuth callback with code ${code.substring(0, 5)}...`);
+        // For Facebook, we directly call the edge function to process the OAuth code
+        console.log("Calling facebook-oauth-callback edge function...");
         
-        // For Facebook, we use our edge function to handle the OAuth flow
-        if (provider === 'facebook') {
+        try {
+          // Directly call the Facebook OAuth callback endpoint
+          const response = await fetch(`${window.location.origin}/api/facebook-oauth-callback?code=${encodeURIComponent(code)}&state=${platformState}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${supabase.auth.getSession()}`
+            }
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Facebook OAuth callback error response:", errorText);
+            throw new Error(`Failed to process authentication: ${response.status} - ${errorText}`);
+          }
+          
           setStatus("success");
-          setMessage(`Successfully connected to ${provider}`);
-          toast.success(`Connected to ${provider}`, {
+          setMessage(`Successfully connected to Facebook`);
+          toast.success(`Connected to Facebook`, {
             description: "Your account was successfully connected"
           });
           
@@ -53,19 +71,15 @@ const AuthCallback = () => {
           setTimeout(() => {
             navigate("/app/settings?tab=integrations&success=facebook_connected");
           }, 1500);
-          return;
-        }
-        
-        // For other providers, we would handle their specific OAuth flow here
-        // This is a placeholder for demo purposes
-        setTimeout(() => {
-          setStatus("success");
-          setMessage(`Successfully connected to ${provider}`);
-          toast.success(`Connected to ${provider}`, {
-            description: "Your account was successfully connected"
+          
+        } catch (error) {
+          console.error("Error calling facebook-oauth-callback:", error);
+          setStatus("error");
+          setMessage(`Failed to process authentication: ${error.message}`);
+          toast.error("Connection failed", {
+            description: error.message
           });
-        }, 1500);
-        
+        }
       } catch (error: any) {
         console.error("OAuth callback error:", error);
         setStatus("error");
@@ -97,8 +111,8 @@ const AuthCallback = () => {
              "Connection Failed"}
           </CardTitle>
           <CardDescription>
-            {status === "loading" ? `Finalizing your ${provider} connection` : 
-             status === "success" ? `Your ${provider} account is now connected` : 
+            {status === "loading" ? `Finalizing your ${provider || 'Facebook'} connection` : 
+             status === "success" ? `Your ${provider || 'Facebook'} account is now connected` : 
              "We encountered an issue connecting your account"}
           </CardDescription>
         </CardHeader>

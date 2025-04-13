@@ -22,6 +22,7 @@ import Notifications from './pages/Notifications';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import Auth from './pages/Auth';
+import AuthCallback from './pages/api/AuthCallback';
 
 const queryClient = new QueryClient();
 
@@ -64,7 +65,10 @@ function App() {
 
               {/* OAuth Callbacks */}
               <Route path="/oauth/callback" element={<OAuthCallback />} />
-              <Route path="/api/auth/callback/:provider" element={<OAuthCallback />} />
+              
+              {/* Facebook-specific callback route */}
+              <Route path="/api/auth/callback/facebook" element={<AuthCallback />} />
+              <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
               
               {/* Catch All - 404 */}
               <Route path="*" element={<NotFound />} />

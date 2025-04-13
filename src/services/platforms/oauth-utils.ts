@@ -13,12 +13,15 @@ const CONFIG = {
  * Generate OAuth URL for various platforms
  */
 export const generateOAuthUrl = (platform: Platform): string => {
-  // Use a central redirect URI to handle all OAuth callbacks
-  const redirectUri = `${window.location.origin}/oauth/callback`;
+  let redirectUri = `${window.location.origin}/oauth/callback`;
+  
+  // Special case for Facebook which requires a specific redirect URI
+  if (platform === 'facebook') {
+    redirectUri = `${window.location.origin}/api/auth/callback/facebook`;
+  }
   
   switch (platform) {
     case 'facebook':
-      // Use same callback URL pattern as other platforms
       return `https://www.facebook.com/v22.0/dialog/oauth?client_id=${CONFIG.FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${platform}&scope=ads_management,ads_read,pages_show_list&response_type=code`;
     
     case 'google':

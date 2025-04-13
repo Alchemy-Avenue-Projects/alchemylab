@@ -1,9 +1,11 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Platform, PlatformConnection } from '@/types/platforms';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { generateOAuthUrl } from '@/services/platforms/oauth-utils';
+import { toast } from 'sonner';
 
 interface PlatformsContextType {
   connections: PlatformConnection[];
@@ -21,7 +23,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   const refreshConnections = async () => {
     if (!profile?.organization_id) {
@@ -52,7 +54,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (err) {
       console.error('Error fetching platform connections:', err);
       setError('Failed to load platform connections.');
-      toast({
+      uiToast({
         title: 'Error',
         description: 'Failed to load platform connections.',
         variant: 'destructive',
@@ -82,15 +84,19 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error(`OAuth URL generation failed for ${platform}`);
       }
       
-      // Redirect to the OAuth URL for all platforms (including Facebook)
+      console.log(`Opening OAuth URL for ${platform}: ${oauthUrl}`);
+      
+      // Redirect to the OAuth URL
       window.location.href = oauthUrl;
+      
+      toast.info("Redirecting to authentication page", {
+        description: `Please complete the ${platform} authentication to continue.`
+      });
     } catch (err) {
       console.error(`Error connecting to ${platform}:`, err);
       setError(`Failed to connect to ${platform}.`);
-      toast({
-        title: 'Connection Error',
-        description: `Failed to connect to ${platform}.`,
-        variant: 'destructive',
+      toast.error(`Connection Error`, {
+        description: `Failed to connect to ${platform}: ${err.message}`
       });
     }
   };
@@ -114,17 +120,14 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         prevConnections.filter(conn => conn.id !== connectionId)
       );
 
-      toast({
-        title: 'Disconnected',
-        description: 'Platform disconnected successfully.',
+      toast.success('Platform disconnected', {
+        description: 'Platform disconnected successfully.'
       });
     } catch (err) {
       console.error('Error disconnecting platform:', err);
       setError('Failed to disconnect platform.');
-      toast({
-        title: 'Error',
-        description: 'Failed to disconnect platform.',
-        variant: 'destructive',
+      toast.error('Error', {
+        description: 'Failed to disconnect platform: ' + err.message
       });
     }
   };
