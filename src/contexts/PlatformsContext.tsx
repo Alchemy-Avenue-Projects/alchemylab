@@ -83,7 +83,17 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error(`OAuth URL generation failed for ${platform}`);
       }
       
-      // Redirect to the OAuth URL
+      // Special handling for Facebook to prevent iframe/embedded context issues
+      if (platform === 'facebook') {
+        window.open(
+          oauthUrl,
+          "_blank",
+          "noopener,noreferrer"
+        );
+        return;
+      }
+      
+      // For other platforms, use the standard redirect
       window.location.href = oauthUrl;
     } catch (err) {
       console.error(`Error connecting to ${platform}:`, err);
