@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
@@ -63,15 +62,6 @@ const refreshToken = async (platform: string, refreshToken: string) => {
         app_id: clientId,
         secret: clientSecret,
         refresh_token: refreshToken
-      };
-      break;
-    case 'pinterest':
-      tokenUrl = 'https://api.pinterest.com/v5/oauth/token';
-      params = {
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: clientId,
-        client_secret: clientSecret
       };
       break;
     default:

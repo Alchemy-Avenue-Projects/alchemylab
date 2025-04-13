@@ -24,7 +24,7 @@ const AccountSelectionList: React.FC<AccountSelectionListProps> = ({
 }) => {
   // Filter connections to only include ad platforms
   const adConnections = connections.filter(conn => 
-    ['facebook', 'google', 'linkedin', 'tiktok', 'pinterest'].includes(conn.platform)
+    ['facebook', 'google', 'linkedin', 'tiktok'].includes(conn.platform)
   );
 
   return (

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationItem from "@/components/settings/IntegrationItem";
@@ -9,7 +10,6 @@ import {
   Brain,
   Linkedin, 
   Twitter, 
-  PinterestIcon,
   MessageCircle,
   LineChart,
   BarChart, 
@@ -55,8 +55,6 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
         return <Linkedin className="text-blue-700" />;
       case 'tiktok':
         return <MessageCircle className="text-black" />;
-      case 'pinterest':
-        return <PinterestIcon className="text-red-600" />;
       
       case 'google_analytics':
         return <LineChart className="text-blue-500" />;

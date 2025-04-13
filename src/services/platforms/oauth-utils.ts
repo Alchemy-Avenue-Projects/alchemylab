@@ -6,8 +6,7 @@ const CONFIG = {
   FACEBOOK_CLIENT_ID: '9352206568161021',
   GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID',
   LINKEDIN_CLIENT_ID: 'YOUR_LINKEDIN_CLIENT_ID',
-  TIKTOK_CLIENT_ID: 'YOUR_TIKTOK_APP_ID',
-  PINTEREST_CLIENT_ID: 'YOUR_PINTEREST_CLIENT_ID'
+  TIKTOK_CLIENT_ID: 'YOUR_TIKTOK_APP_ID'
 };
 
 /**
@@ -33,9 +32,6 @@ export const generateOAuthUrl = (platform: Platform): string => {
     
     case 'tiktok':
       return `https://ads.tiktok.com/marketing_api/auth?app_id=${CONFIG.TIKTOK_CLIENT_ID}&state=${platform}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
-    
-    case 'pinterest':
-      return `https://www.pinterest.com/oauth/?client_id=${CONFIG.PINTEREST_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=ads:read,ads:write&state=${platform}`;
     
     case 'google_analytics':
       return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/analytics.readonly&state=${platform}&access_type=offline&prompt=consent`;
