@@ -22,6 +22,7 @@ import Creator from './pages/Creator';
 import Notifications from './pages/Notifications';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
+import Auth from './pages/Auth';
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ function App() {
               <Route path="/" element={<Homepage />} />
               <Route path="/features" element={<Features />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/auth" element={<Auth />} />
               
               {/* App Routes */}
               <Route path="/app" element={<AppLayout />}>
