@@ -43,15 +43,18 @@ const AuthCallback = () => {
           return;
         }
 
-        // For Facebook, we directly call the edge function to process the OAuth code
+        // For Facebook, we directly call the facebook-oauth-callback edge function
         console.log("Calling facebook-oauth-callback edge function...");
         
         try {
-          // Directly call the Facebook OAuth callback endpoint
-          const response = await fetch(`${window.location.origin}/api/facebook-oauth-callback?code=${encodeURIComponent(code)}&state=${platformState}`, {
+          // Use direct fetch to call the facebook-oauth-callback edge function
+          const edgeFunctionUrl = `https://yiqfsetkcnvudalyntvw.supabase.co/functions/v1/facebook-oauth-callback`;
+          
+          const response = await fetch(`${edgeFunctionUrl}?code=${encodeURIComponent(code)}&state=${platformState}`, {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${supabase.auth.getSession()}`
+              'Authorization': `Bearer ${localStorage.getItem('sb-yiqfsetkcnvudalyntvw-auth-token')}`,
+              'Content-Type': 'application/json'
             }
           });
           
@@ -60,6 +63,9 @@ const AuthCallback = () => {
             console.error("Facebook OAuth callback error response:", errorText);
             throw new Error(`Failed to process authentication: ${response.status} - ${errorText}`);
           }
+          
+          const result = await response.json();
+          console.log("Facebook OAuth callback result:", result);
           
           setStatus("success");
           setMessage(`Successfully connected to Facebook`);

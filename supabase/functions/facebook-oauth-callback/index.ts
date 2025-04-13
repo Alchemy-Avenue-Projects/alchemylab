@@ -104,12 +104,24 @@ const handleRequest = async (req: Request) => {
     
     if (error) {
       logError(`Facebook OAuth error: ${error} - ${errorReason}`);
-      return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=facebook_auth_failed&reason=${errorReason}`, 302);
+      return new Response(
+        JSON.stringify({ error: errorReason || error }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
     if (!code) {
       logError("Missing authorization code");
-      return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_code`, 302);
+      return new Response(
+        JSON.stringify({ error: "Missing authorization code" }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
     // Get the auth token from the request headers
@@ -130,7 +142,7 @@ const handleRequest = async (req: Request) => {
     }
     
     // For Facebook, we need to use the exact same redirect URI that was used in the initial request
-    const redirectUri = `${url.origin}/api/auth/callback/facebook`;
+    const redirectUri = `${url.origin.replace('yiqfsetkcnvudalyntvw.supabase.co/functions/v1', 'alchemylab.app')}/api/auth/callback/facebook`;
     
     logInfo(`Using redirect URI: ${redirectUri}`);
     
@@ -139,7 +151,13 @@ const handleRequest = async (req: Request) => {
     
     if (!tokenData || !tokenData.accessToken) {
       logError("Failed to get access token");
-      return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=token_exchange_failed`, 302);
+      return new Response(
+        JSON.stringify({ error: "Failed to get access token" }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
     logInfo("Successfully obtained access token");
@@ -155,7 +173,13 @@ const handleRequest = async (req: Request) => {
       
       if (profileError || !userProfile?.organization_id) {
         logError("Profile error or missing organization", profileError);
-        return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_organization`, 302);
+        return new Response(
+          JSON.stringify({ error: "Missing organization" }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
       
       logInfo("Found user organization", { organizationId: userProfile.organization_id });
@@ -179,7 +203,7 @@ const handleRequest = async (req: Request) => {
             status: account.account_status
           });
           
-          const { data: existingConnection } = await supabase
+          const { data: existingConnection, error: connectionError } = await supabase
             .from('platform_connections')
             .select('id')
             .eq('platform', 'facebook')
@@ -187,9 +211,13 @@ const handleRequest = async (req: Request) => {
             .eq('account_id', accountId)
             .maybeSingle();
           
+          if (connectionError) {
+            logError("Error checking for existing connection", connectionError);
+          }
+          
           if (existingConnection) {
             logInfo("Updating existing platform connection", { id: existingConnection.id });
-            await supabase
+            const { error: updateError } = await supabase
               .from('platform_connections')
               .update({
                 auth_token: tokenData.accessToken,
@@ -197,9 +225,13 @@ const handleRequest = async (req: Request) => {
                 updated_at: new Date().toISOString()
               })
               .eq('id', existingConnection.id);
+              
+            if (updateError) {
+              logError("Error updating connection", updateError);
+            }
           } else {
             logInfo("Creating new platform connection");
-            await supabase
+            const { error: insertError } = await supabase
               .from('platform_connections')
               .insert({
                 platform: 'facebook',
@@ -211,12 +243,16 @@ const handleRequest = async (req: Request) => {
                 connected_by: user.id,
                 connected: true
               });
+              
+            if (insertError) {
+              logError("Error creating connection", insertError);
+            }
           }
         }
       } else {
         // No ad accounts, but still save the connection with just the token
         logInfo("No ad accounts found, saving platform connection with just the token");
-        await supabase
+        const { error: insertError } = await supabase
           .from('platform_connections')
           .insert({
             platform: 'facebook',
@@ -227,15 +263,34 @@ const handleRequest = async (req: Request) => {
             connected: true,
             account_name: "Facebook Account"
           });
+          
+        if (insertError) {
+          logError("Error creating connection", insertError);
+        }
       }
     }
     
     logInfo("Facebook OAuth callback completed successfully");
-    return Response.redirect(`${url.origin}/app/settings?tab=integrations&success=facebook_connected`, 302);
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: "Facebook connection successful", 
+        adAccountsCount: user ? (await fetchAdAccounts(tokenData.accessToken)).length : 0 
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     logError('Facebook OAuth callback error:', error);
-    const url = new URL(req.url);
-    return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=${encodeURIComponent(error.message || "Unknown error")}`, 302);
+    return new Response(
+      JSON.stringify({ error: error.message || "Unknown error" }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
 };
 
