@@ -41,36 +41,6 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
     return "/placeholder.svg";
   };
 
-  // Show connections for a platform
-  const renderPlatformConnections = (platform: Platform) => {
-    const platformConnections = connections.filter(conn => conn.platform === platform);
-    
-    if (platformConnections.length === 0) {
-      return (
-        <IntegrationItem
-          key={platform}
-          name={platforms.find(p => p.platform === platform)?.name || platform}
-          status="not-connected"
-          logo={getPlatformLogo(platform)}
-          onConnect={() => onConnect(platform)}
-          isLoading={connectingPlatform === platform}
-        />
-      );
-    }
-    
-    return platformConnections.map(connection => (
-      <IntegrationItem
-        key={connection.id}
-        name={platforms.find(p => p.platform === platform)?.name || platform}
-        status="connected"
-        account={connection.account_name}
-        logo={getPlatformLogo(platform)}
-        onDisconnect={() => onDisconnect(connection.id)}
-        isLoading={disconnectingId === connection.id}
-      />
-    ));
-  };
-
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -80,9 +50,23 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
       <CardContent className="space-y-4">
         <div className="space-y-4">
           {platforms.map((platformItem) => (
-            <div key={platformItem.platform} className="space-y-2">
-              {renderPlatformConnections(platformItem.platform)}
-            </div>
+            <IntegrationItem
+              key={platformItem.platform}
+              name={platformItem.name}
+              status={getConnection(platformItem.platform) ? "connected" : "not-connected"}
+              account={getConnection(platformItem.platform)?.account_name}
+              logo={getPlatformLogo(platformItem.platform)}
+              onConnect={() => onConnect(platformItem.platform)}
+              onDisconnect={
+                getConnection(platformItem.platform)
+                  ? () => onDisconnect(getConnection(platformItem.platform)!.id)
+                  : undefined
+              }
+              isLoading={
+                connectingPlatform === platformItem.platform ||
+                disconnectingId === getConnection(platformItem.platform)?.id
+              }
+            />
           ))}
         </div>
       </CardContent>
