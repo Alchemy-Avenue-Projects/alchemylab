@@ -9,7 +9,7 @@ import {
   Brain,
   Linkedin, 
   Twitter, 
-  Pinterest,
+  PinterestIcon,
   MessageCircle,
   LineChart,
   BarChart, 
@@ -56,7 +56,7 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
       case 'tiktok':
         return <MessageCircle className="text-black" />;
       case 'pinterest':
-        return <Pinterest className="text-red-600" />;
+        return <PinterestIcon className="text-red-600" />;
       
       case 'google_analytics':
         return <LineChart className="text-blue-500" />;
