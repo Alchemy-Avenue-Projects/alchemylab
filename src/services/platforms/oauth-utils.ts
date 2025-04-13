@@ -16,8 +16,8 @@ export const generateOAuthUrl = (platform: Platform): string => {
   // Use a central redirect URI to handle all OAuth callbacks
   const redirectUri = `${window.location.origin}/oauth/callback`;
   
-  // For Facebook, we'll use the standard OAuth callback
-  const facebookRedirectUri = `${window.location.origin}/oauth/callback`;
+  // For Facebook, we'll use a direct callback to our API route
+  const facebookRedirectUri = `${window.location.origin}/api/auth/callback/facebook`;
   
   switch (platform) {
     case 'facebook':

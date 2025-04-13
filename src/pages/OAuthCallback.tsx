@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -18,7 +17,6 @@ const OAuthCallback: React.FC = () => {
     const handleOAuthCallback = async () => {
       try {
         const { code, state, error } = parseOAuthRedirect();
-        console.log('OAuth callback params:', { code: code?.substring(0, 10) + '...', state, error });
         
         if (error) {
           setStatus('error');
@@ -48,7 +46,6 @@ const OAuthCallback: React.FC = () => {
         });
 
         if (exchangeError) {
-          console.error('Error exchanging code:', exchangeError);
           throw new Error(exchangeError.message);
         }
 
@@ -73,9 +70,6 @@ const OAuthCallback: React.FC = () => {
 
         setStatus('success');
         setMessage(`Successfully connected to ${state}!`);
-        toast.success(`Connected to ${state}`, {
-          description: "Your account was successfully connected"
-        });
         
         // Redirect back to settings after a delay
         setTimeout(() => {
@@ -85,9 +79,6 @@ const OAuthCallback: React.FC = () => {
         console.error('Error processing OAuth callback:', err);
         setStatus('error');
         setMessage('Failed to complete the connection process. Please try again.');
-        toast.error('Connection Failed', {
-          description: 'There was an error connecting your account'
-        });
       }
     };
 
