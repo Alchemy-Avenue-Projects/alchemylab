@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
@@ -65,6 +66,28 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
   };
 };
 
+const fetchFacebookUserProfile = async (accessToken: string) => {
+  logInfo("Fetching Facebook user profile");
+  
+  const url = `https://graph.facebook.com/v22.0/me?fields=id,name,email&access_token=${accessToken}`;
+  
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    logError(`Failed to fetch user profile: ${response.status}`, errorText);
+    throw new Error(`Failed to fetch user profile: ${response.status} - ${errorText}`);
+  }
+  
+  const data = await response.json();
+  logInfo("Successfully fetched user profile", {
+    id: data.id,
+    name: data.name,
+  });
+  
+  return data;
+};
+
 const fetchAdAccounts = async (accessToken: string) => {
   logInfo("Fetching ad accounts");
   
@@ -116,11 +139,20 @@ const handleRequest = async (req: Request) => {
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     
+    // Get the user from the auth header token
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
-      logError("Auth error or user not found", authError);
-      return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=auth_required`, 302);
+      // Try to get the user from session cookie if auth header failed
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) {
+        logError("Auth error or user not found", authError || sessionError);
+        return Response.redirect(`${url.origin}/auth?error=auth_required&redirect=/app/settings?tab=integrations`, 302);
+      }
+      
+      // Use the session user instead
+      user = session.user;
     }
     
     logInfo("Authenticated user", { id: user.id, email: user.email });
@@ -138,9 +170,14 @@ const handleRequest = async (req: Request) => {
     
     logInfo("Found user organization", { organizationId: userProfile.organization_id });
     
+    // Create a consistent redirect URI for token exchange
     const redirectUri = `${url.origin}/api/auth/callback/facebook`;
     const tokenData = await exchangeCodeForToken(code, redirectUri);
     
+    // Fetch user profile from Facebook
+    const userFacebookProfile = await fetchFacebookUserProfile(tokenData.accessToken);
+    
+    // Fetch ad accounts
     const adAccounts = await fetchAdAccounts(tokenData.accessToken);
     
     if (adAccounts.length === 0) {
@@ -165,6 +202,9 @@ const handleRequest = async (req: Request) => {
         .eq('account_id', accountId)
         .maybeSingle();
       
+      // Save user profile name as part of the account data
+      const accountName = `${account.name} (${userFacebookProfile.name})`;
+      
       if (existingConnection) {
         logInfo("Updating existing platform connection", { id: existingConnection.id });
         await supabase
@@ -172,6 +212,7 @@ const handleRequest = async (req: Request) => {
           .update({
             auth_token: tokenData.accessToken,
             token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
+            account_name: accountName,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingConnection.id);
@@ -185,7 +226,7 @@ const handleRequest = async (req: Request) => {
             auth_token: tokenData.accessToken,
             token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
             account_id: accountId,
-            account_name: account.name,
+            account_name: accountName,
             connected_by: user.id,
             connected: true
           });
@@ -206,7 +247,7 @@ const handleRequest = async (req: Request) => {
             auth_token: tokenData.accessToken,
             refresh_token: tokenData.expiresIn ? 'facebook_refresh_not_applicable' : null,
             connected_at: new Date().toISOString(),
-            account_name: account.name
+            account_name: accountName
           })
           .eq('id', existingAdAccount.id);
       } else {
@@ -216,7 +257,7 @@ const handleRequest = async (req: Request) => {
           .insert({
             platform: 'facebook',
             account_id_on_platform: accountId,
-            account_name: account.name,
+            account_name: accountName,
             auth_token: tokenData.accessToken,
             client_id: userProfile.organization_id,
             connected_at: new Date().toISOString()

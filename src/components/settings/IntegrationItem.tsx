@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IntegrationItemProps {
   name: string;
@@ -58,7 +59,20 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
         </div>
         <div>
           <div className="font-medium">{name}</div>
-          {account && <div className="text-sm text-muted-foreground">{account}</div>}
+          {account && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                    {account}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{account}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
       {status === "connected" ? (

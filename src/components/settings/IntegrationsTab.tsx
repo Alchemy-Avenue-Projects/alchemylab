@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlatforms } from "@/contexts/PlatformsContext";
 import PlatformCategory from "./integration/PlatformCategory";
 import ApiKeyDialog from "./integration/ApiKeyDialog";
+import { toast } from "sonner";
 
 // Define platform categories
 const adPlatforms = [
@@ -36,10 +37,39 @@ const IntegrationsTab: React.FC = () => {
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const { profile } = useAuth();
 
   useEffect(() => {
+    // Check for success or error parameters in the URL
+    const success = searchParams.get('success');
+    const error = searchParams.get('error');
+    const warning = searchParams.get('warning');
+    const reason = searchParams.get('reason');
+    
+    if (success === 'facebook_connected') {
+      toast.success('Facebook Ads Connected', {
+        description: 'Your Facebook ad account has been successfully connected.'
+      });
+      // Clear the URL params
+      setSearchParams({});
+      // Refresh the connections list
+      refreshConnections();
+    } else if (error) {
+      toast.error('Connection Error', {
+        description: reason || `There was an error connecting: ${error}`
+      });
+      // Clear the URL params
+      setSearchParams({});
+    } else if (warning) {
+      toast.warning('Warning', {
+        description: warning === 'no_ad_accounts' ? 
+          'No ad accounts found for this connection.' : warning
+      });
+      // Clear the URL params
+      setSearchParams({});
+    }
+    
     // Check if we've been redirected with platform and modal params
     const platform = searchParams.get('platform') as Platform | null;
     const modal = searchParams.get('modal');
@@ -50,7 +80,7 @@ const IntegrationsTab: React.FC = () => {
       // Clear the query params
       setSearchParams({});
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, refreshConnections]);
 
   const handleConnect = async (platform: Platform) => {
     try {
@@ -58,7 +88,7 @@ const IntegrationsTab: React.FC = () => {
       await connectPlatform(platform);
     } catch (error) {
       console.error(`Error connecting to ${platform}:`, error);
-      toast({
+      uiToast({
         title: "Connection Failed",
         description: `Failed to connect to ${platform}. Please try again.`,
         variant: "destructive"
@@ -74,7 +104,7 @@ const IntegrationsTab: React.FC = () => {
       await disconnectPlatform(connectionId);
     } catch (error) {
       console.error(`Error disconnecting:`, error);
-      toast({
+      uiToast({
         title: "Disconnection Failed",
         description: "Failed to disconnect platform. Please try again.",
         variant: "destructive"
@@ -102,7 +132,7 @@ const IntegrationsTab: React.FC = () => {
       
       if (error) throw error;
       
-      toast({
+      uiToast({
         title: 'Connected Successfully',
         description: `${currentPlatform} has been connected using your API key.`,
       });
@@ -115,7 +145,7 @@ const IntegrationsTab: React.FC = () => {
       setCurrentPlatform(null);
     } catch (err) {
       console.error('Error saving API key:', err);
-      toast({
+      uiToast({
         title: 'Connection Failed',
         description: 'There was an error connecting with your API key.',
         variant: 'destructive',
