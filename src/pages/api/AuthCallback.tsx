@@ -41,11 +41,8 @@ const AuthCallback = () => {
 
         console.log(`Processing ${provider} OAuth callback with code ${code.substring(0, 5)}...`);
         
-        // For Facebook, we don't need to do anything here since the callback 
-        // is handled by our edge function. Just set success.
+        // For Facebook, we use our edge function to handle the OAuth flow
         if (provider === 'facebook') {
-          // The edge function should redirect, but in case we ended up here
-          // we can show success and redirect the user.
           setStatus("success");
           setMessage(`Successfully connected to ${provider}`);
           toast.success(`Connected to ${provider}`, {
