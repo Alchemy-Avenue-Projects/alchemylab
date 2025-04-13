@@ -22,7 +22,8 @@ export const generateOAuthUrl = (platform: Platform): string => {
   
   switch (platform) {
     case 'facebook':
-      // Direct Facebook OAuth flow using our custom API route - updated to v22.0
+      // Direct Facebook OAuth flow using our custom API route
+      // Use https protocol to avoid connection refusal
       return `https://www.facebook.com/v22.0/dialog/oauth?client_id=${CONFIG.FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(facebookRedirectUri)}&state=${platform}&scope=ads_management,ads_read`;
     
     case 'google':

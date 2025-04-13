@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
@@ -12,7 +11,6 @@ const FACEBOOK_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-// Add more detailed logging for debugging
 const logInfo = (message: string, data?: any) => {
   if (data) {
     console.log(`INFO: ${message}`, data);
@@ -29,12 +27,10 @@ const logError = (message: string, error?: any) => {
   }
 };
 
-// Handle CORS preflight requests
 const handlePreflight = () => {
   return new Response(null, { headers: corsHeaders, status: 204 });
 };
 
-// Exchange auth code for access token
 const exchangeCodeForToken = async (code: string, redirectUri: string) => {
   if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
     throw new Error("Missing Facebook app credentials");
@@ -69,7 +65,6 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
   };
 };
 
-// Fetch user's Facebook ad accounts
 const fetchAdAccounts = async (accessToken: string) => {
   logInfo("Fetching ad accounts");
   
@@ -101,30 +96,26 @@ const handleRequest = async (req: Request) => {
       code: code ? `${code.substring(0, 5)}...` : null,
       error,
       errorReason,
-      state
+      state,
+      origin: url.origin,
+      fullUrl: req.url
     });
     
-    // Check for errors from Facebook
     if (error) {
       logError(`Facebook OAuth error: ${error} - ${errorReason}`);
-      // Redirect to the frontend with error
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=facebook_auth_failed&reason=${errorReason}`, 302);
     }
     
-    // Verify we have a code
     if (!code) {
       logError("Missing authorization code");
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&error=missing_code`, 302);
     }
     
-    // Get auth header for user identification
     const authHeader = req.headers.get('Authorization') || '';
     const token = authHeader.replace('Bearer ', '');
     
-    // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     
-    // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
@@ -134,7 +125,6 @@ const handleRequest = async (req: Request) => {
     
     logInfo("Authenticated user", { id: user.id, email: user.email });
     
-    // Get user's organization from profile
     const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
       .select('organization_id')
@@ -148,11 +138,9 @@ const handleRequest = async (req: Request) => {
     
     logInfo("Found user organization", { organizationId: userProfile.organization_id });
     
-    // Exchange code for token
     const redirectUri = `${url.origin}/api/auth/callback/facebook`;
     const tokenData = await exchangeCodeForToken(code, redirectUri);
     
-    // Fetch ad accounts
     const adAccounts = await fetchAdAccounts(tokenData.accessToken);
     
     if (adAccounts.length === 0) {
@@ -160,7 +148,6 @@ const handleRequest = async (req: Request) => {
       return Response.redirect(`${url.origin}/app/settings?tab=integrations&warning=no_ad_accounts`, 302);
     }
     
-    // Insert or update connections in platform_connections
     for (const account of adAccounts) {
       const accountId = account.id.replace('act_', '');
       
@@ -170,7 +157,6 @@ const handleRequest = async (req: Request) => {
         status: account.account_status
       });
       
-      // First, check if this account connection already exists
       const { data: existingConnection } = await supabase
         .from('platform_connections')
         .select('id')
@@ -180,7 +166,6 @@ const handleRequest = async (req: Request) => {
         .maybeSingle();
       
       if (existingConnection) {
-        // Update existing connection
         logInfo("Updating existing platform connection", { id: existingConnection.id });
         await supabase
           .from('platform_connections')
@@ -191,7 +176,6 @@ const handleRequest = async (req: Request) => {
           })
           .eq('id', existingConnection.id);
       } else {
-        // Create new connection
         logInfo("Creating new platform connection");
         await supabase
           .from('platform_connections')
@@ -207,8 +191,6 @@ const handleRequest = async (req: Request) => {
           });
       }
       
-      // Also store in ad_accounts table per requirements
-      // Check if the ad account already exists
       const { data: existingAdAccount } = await supabase
         .from('ad_accounts')
         .select('id')
@@ -217,7 +199,6 @@ const handleRequest = async (req: Request) => {
         .maybeSingle();
       
       if (existingAdAccount) {
-        // Update existing ad account
         logInfo("Updating existing ad account", { id: existingAdAccount.id });
         await supabase
           .from('ad_accounts')
@@ -229,7 +210,6 @@ const handleRequest = async (req: Request) => {
           })
           .eq('id', existingAdAccount.id);
       } else {
-        // Insert new ad account
         logInfo("Creating new ad account");
         await supabase
           .from('ad_accounts')
@@ -245,7 +225,6 @@ const handleRequest = async (req: Request) => {
     }
     
     logInfo("Facebook OAuth callback completed successfully");
-    // Redirect to success page
     return Response.redirect(`${url.origin}/app/settings?tab=integrations&success=facebook_connected`, 302);
   } catch (error) {
     logError('Facebook OAuth callback error:', error);
@@ -255,11 +234,9 @@ const handleRequest = async (req: Request) => {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return handlePreflight();
   }
   
-  // Handle the actual request
   return handleRequest(req);
 });
