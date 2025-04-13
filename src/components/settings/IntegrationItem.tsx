@@ -9,7 +9,7 @@ interface IntegrationItemProps {
   name: string;
   status: "connected" | "not-connected";
   account?: string;
-  logo: string;
+  icon: React.ReactNode;
   onConnect?: () => void;
   onDisconnect?: () => void;
   isLoading?: boolean;
@@ -19,7 +19,7 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
   name, 
   status, 
   account, 
-  logo,
+  icon,
   onConnect,
   onDisconnect,
   isLoading = false
@@ -54,7 +54,7 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
     <div className="flex justify-between items-center p-4 border rounded-md bg-card shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center">
         <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center mr-4 overflow-hidden">
-          <img src={logo} alt={name} className="h-6 w-6 object-contain" />
+          {icon}
         </div>
         <div>
           <div className="font-medium">{name}</div>

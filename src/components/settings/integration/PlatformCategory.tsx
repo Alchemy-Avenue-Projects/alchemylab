@@ -4,6 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import IntegrationItem from "@/components/settings/IntegrationItem";
 import { Platform } from "@/types/platforms";
 import { PlatformConnection } from "@/types/platforms";
+import { 
+  Facebook, 
+  BarChart3, 
+  Brain,
+  Linkedin, 
+  Twitter, 
+  PinterestIcon, 
+  MessageCircle,
+  LineChart,
+  BarChart, 
+  PenSquare,
+  BrainCircuit
+} from "lucide-react";
 
 interface PlatformCategoryProps {
   title: string;
@@ -34,11 +47,37 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
     return connections.find(conn => conn.platform === platform);
   };
 
-  // Get the appropriate logo for each platform
-  const getPlatformLogo = (platform: Platform) => {
-    // In a real app, you'd have actual logos for each platform
-    // For now, we'll just use placeholder.svg
-    return "/placeholder.svg";
+  // Get the appropriate icon for each platform
+  const getPlatformIcon = (platform: Platform) => {
+    switch (platform) {
+      // Marketing platforms
+      case 'facebook':
+        return <Facebook className="text-blue-600" />;
+      case 'google':
+        return <div className="flex items-center justify-center w-6 h-6 text-white bg-red-500 rounded-full">G</div>;
+      case 'linkedin':
+        return <Linkedin className="text-blue-700" />;
+      case 'tiktok':
+        return <MessageCircle className="text-black" />;
+      case 'pinterest':
+        return <PinterestIcon className="text-red-600" />;
+      
+      // Analytics platforms
+      case 'google_analytics':
+        return <LineChart className="text-blue-500" />;
+      case 'mixpanel':
+        return <BarChart className="text-purple-600" />;
+      case 'amplitude':
+        return <BarChart3 className="text-teal-600" />;
+      
+      // AI platforms
+      case 'openai':
+        return <BrainCircuit className="text-green-600" />;
+      
+      // Default fallback
+      default:
+        return <PenSquare className="text-gray-500" />;
+    }
   };
 
   return (
@@ -55,7 +94,7 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
               name={platformItem.name}
               status={getConnection(platformItem.platform) ? "connected" : "not-connected"}
               account={getConnection(platformItem.platform)?.account_name}
-              logo={getPlatformLogo(platformItem.platform)}
+              icon={getPlatformIcon(platformItem.platform)}
               onConnect={() => onConnect(platformItem.platform)}
               onDisconnect={
                 getConnection(platformItem.platform)
