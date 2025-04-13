@@ -9,7 +9,7 @@ import {
   Brain,
   Linkedin, 
   Twitter, 
-  Pinterest,
+  PinterestLogo,
   MessageCircle,
   LineChart,
   BarChart, 
@@ -41,15 +41,12 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
   connectingPlatform,
   disconnectingId,
 }) => {
-  // Find connection by platform type
   const getConnection = (platform: Platform) => {
     return connections.find(conn => conn.platform === platform);
   };
 
-  // Get the appropriate icon for each platform
   const getPlatformIcon = (platform: Platform) => {
     switch (platform) {
-      // Marketing platforms
       case 'facebook':
         return <Facebook className="text-blue-600" />;
       case 'google':
@@ -59,9 +56,8 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
       case 'tiktok':
         return <MessageCircle className="text-black" />;
       case 'pinterest':
-        return <Pinterest className="text-red-600" />;
+        return <PinterestLogo className="text-red-600" />;
       
-      // Analytics platforms
       case 'google_analytics':
         return <LineChart className="text-blue-500" />;
       case 'mixpanel':
@@ -69,11 +65,9 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
       case 'amplitude':
         return <BarChart3 className="text-teal-600" />;
       
-      // AI platforms
       case 'openai':
         return <BrainCircuit className="text-green-600" />;
       
-      // Default fallback
       default:
         return <PenSquare className="text-gray-500" />;
     }
