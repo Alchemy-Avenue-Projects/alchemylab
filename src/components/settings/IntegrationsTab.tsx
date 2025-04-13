@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Platform } from "@/types/platforms";
@@ -10,13 +9,12 @@ import { usePlatforms } from "@/contexts/PlatformsContext";
 import PlatformCategory from "./integration/PlatformCategory";
 import ApiKeyDialog from "./integration/ApiKeyDialog";
 
-// Define platform categories
+// Define platform categories - Remove Pinterest
 const adPlatforms = [
   { name: "Facebook Ads", platform: "facebook" as Platform },
   { name: "Google Ads", platform: "google" as Platform },
   { name: "LinkedIn Ads", platform: "linkedin" as Platform },
   { name: "TikTok Ads", platform: "tiktok" as Platform },
-  { name: "Pinterest Ads", platform: "pinterest" as Platform },
 ];
 
 const analyticsPlatforms = [

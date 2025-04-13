@@ -5,7 +5,7 @@ import { FacebookAdsService } from './FacebookAdsService';
 import { GoogleAdsService } from './GoogleAdsService';
 import { TikTokAdsService } from './TikTokAdsService';
 import { LinkedInAdsService } from './LinkedInAdsService';
-import { PinterestAdsService } from './PinterestAdsService';
+// Remove PinterestAdsService import
 import { GoogleAnalyticsService } from './GoogleAnalyticsService';
 import { MixpanelService } from './MixpanelService'; 
 import { AmplitudeService } from './AmplitudeService';
@@ -22,8 +22,7 @@ export class PlatformServiceFactory {
         return new TikTokAdsService(credentials);
       case 'linkedin':
         return new LinkedInAdsService(credentials);
-      case 'pinterest':
-        return new PinterestAdsService(credentials);
+      // Remove case for 'pinterest'
       case 'google_analytics':
         return new GoogleAnalyticsService(credentials);
       case 'mixpanel':

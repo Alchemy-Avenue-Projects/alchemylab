@@ -1,10 +1,8 @@
-
 export type MarketingPlatform = 
   | 'facebook'
   | 'google'
   | 'linkedin'
-  | 'tiktok'
-  | 'pinterest';
+  | 'tiktok';
 
 export type AnalyticsPlatform = 
   | 'google_analytics'
