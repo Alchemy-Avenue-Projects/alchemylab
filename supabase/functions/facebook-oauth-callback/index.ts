@@ -45,6 +45,9 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
   tokenUrl.searchParams.append("redirect_uri", redirectUri);
   tokenUrl.searchParams.append("code", code);
 
+  // Log full token URL for debugging
+  logInfo(`Full token URL: ${tokenUrl.toString()}`);
+
   const response = await fetch(tokenUrl.toString());
   
   if (!response.ok) {
@@ -141,8 +144,10 @@ const handleRequest = async (req: Request) => {
       logInfo("Authenticated user", { id: user.id, email: user.email });
     }
     
+    // IMPORTANT: Use the real app domain that is registered in Facebook Developer Console
     // For Facebook, we need to use the exact same redirect URI that was used in the initial request
-    const redirectUri = `${url.origin.replace('yiqfsetkcnvudalyntvw.supabase.co/functions/v1', 'alchemylab.app')}/api/auth/callback/facebook`;
+    // This MUST match what's in your Facebook App settings
+    const redirectUri = `https://alchemylab.app/api/auth/callback/facebook`;
     
     logInfo(`Using redirect URI: ${redirectUri}`);
     
