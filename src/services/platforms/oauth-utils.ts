@@ -13,12 +13,13 @@ const CONFIG = {
  * Generate OAuth URL for various platforms
  */
 export const generateOAuthUrl = (platform: Platform): string => {
+  // Default redirect URI for most platforms
   let redirectUri = `${window.location.origin}/oauth/callback`;
   
-  // Special case for Facebook which requires a specific redirect URI
+  // For Facebook, the redirect URI must match what's registered in the Facebook Developer Console
   if (platform === 'facebook') {
-    // This MUST match what's registered in Facebook Developer Console
-    redirectUri = `https://alchemylab.app/api/auth/callback/facebook`;
+    // This must match the redirect URI registered in the Facebook Developer Console
+    redirectUri = `${window.location.origin}/api/auth/callback/facebook`;
   }
   
   switch (platform) {

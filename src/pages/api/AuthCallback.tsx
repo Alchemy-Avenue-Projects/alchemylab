@@ -46,51 +46,47 @@ const AuthCallback = () => {
           return;
         }
 
-        // Check if user is authenticated
-        if (!user) {
-          console.error("User not authenticated, redirecting to login");
-          setStatus("error");
-          setMessage("You need to be logged in to connect platforms.");
-          toast.error("Authentication required", {
-            description: "You need to be logged in to connect platforms"
-          });
-          
-          // Redirect to login after a short delay
-          setTimeout(() => {
-            navigate("/auth?redirect=/app/settings?tab=integrations");
-          }, 1500);
-          return;
-        }
-
-        // If we don't have a profile yet but we have a user, create a minimal organization connection
+        // Store the authorization code directly without checking if user is authenticated
+        // We'll handle authentication in the edge function
+        console.log("Storing authorization code in platform_connections...");
+        
+        // Use the user ID if available, otherwise create a temporary record
         let organizationId = profile?.organization_id;
         let userId = user?.id;
         
-        if (!organizationId) {
+        // We continue even if we don't have a user or organization ID
+        // The edge function will handle this case
+        
+        if (!organizationId && userId) {
           console.warn("No organization ID found in profile, using user ID as fallback");
           organizationId = userId;
         }
 
-        // First, store the authorization code in the database
-        console.log("Storing authorization code in platform_connections...");
-        const { data: connectionData, error: connectionError } = await supabase
-          .from('platform_connections')
-          .insert({
-            platform: platformState,
-            organization_id: organizationId,
-            auth_code: code,
-            connected_by: userId,
-            connected: false  // Not fully connected yet until we exchange the code for a token
-          })
-          .select()
-          .single();
-          
-        if (connectionError) {
-          console.error("Error storing authorization code:", connectionError);
-          throw new Error(`Failed to store authorization code: ${connectionError.message}`);
+        // Only attempt to store if we have either an organization ID or user ID
+        if (organizationId) {
+          const { data: connectionData, error: connectionError } = await supabase
+            .from('platform_connections')
+            .insert({
+              platform: platformState,
+              organization_id: organizationId,
+              auth_code: code,
+              connected_by: userId,
+              connected: false  // Not fully connected yet until we exchange the code for a token
+            })
+            .select()
+            .single();
+            
+          if (connectionError) {
+            console.error("Error storing authorization code:", connectionError);
+            console.log("Will attempt to proceed with the edge function anyway.");
+          } else {
+            console.log("Successfully stored authorization code.");
+          }
+        } else {
+          console.log("No organization or user ID available - the edge function will handle this.");
         }
         
-        console.log("Successfully stored authorization code, now calling facebook-oauth-callback...");
+        console.log("Now calling facebook-oauth-callback...");
         
         // Now call the edge function to exchange the code for a token
         try {
@@ -117,7 +113,7 @@ const AuthCallback = () => {
             navigate("/app/settings?tab=integrations&success=facebook_connected");
           }, 1500);
           
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error calling facebook-oauth-callback:", error);
           setStatus("error");
           setMessage(`Failed to process authentication: ${error.message}`);
@@ -130,7 +126,7 @@ const AuthCallback = () => {
         setStatus("error");
         setMessage(error.message || "An error occurred during authorization");
         toast.error("Connection failed", {
-          description: error.message || "An error occurred during authorization"
+          description: error.message || "An unexpected error occurred"
         });
       }
     };

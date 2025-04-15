@@ -14,6 +14,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const UserMenu: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -36,7 +37,8 @@ const UserMenu: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      console.log("Signing out...");
+      await supabase.auth.signOut();
       toast.success("You have been logged out successfully");
       navigate("/auth");
     } catch (error) {
