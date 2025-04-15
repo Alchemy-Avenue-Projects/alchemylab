@@ -6,12 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AuthCallback = () => {
   const { provider } = useParams<{ provider: string }>();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState<string>("");
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const processOAuthCallback = async () => {
@@ -43,13 +45,46 @@ const AuthCallback = () => {
           return;
         }
 
-        // For Facebook, we directly call the facebook-oauth-callback edge function
-        console.log("Calling facebook-oauth-callback edge function...");
+        if (!profile?.organization_id) {
+          setStatus("error");
+          setMessage("You need to be logged in to connect platforms.");
+          toast.error("Authentication required", {
+            description: "You need to be logged in to connect platforms"
+          });
+          
+          // Redirect to login after a short delay
+          setTimeout(() => {
+            navigate("/auth?redirect=/app/settings?tab=integrations");
+          }, 1500);
+          return;
+        }
+
+        // First, store the authorization code in the database
+        console.log("Storing authorization code in platform_connections...");
+        const { data: connectionData, error: connectionError } = await supabase
+          .from('platform_connections')
+          .insert({
+            platform: platformState,
+            organization_id: profile.organization_id,
+            auth_code: code,
+            connected_by: profile.id,
+            connected: false  // Not fully connected yet until we exchange the code for a token
+          })
+          .select()
+          .single();
+          
+        if (connectionError) {
+          console.error("Error storing authorization code:", connectionError);
+          throw new Error(`Failed to store authorization code: ${connectionError.message}`);
+        }
         
+        console.log("Successfully stored authorization code, now calling facebook-oauth-callback...");
+        
+        // Now call the edge function to exchange the code for a token
         try {
-          // Use Supabase function invocation (safer than direct fetch)
+          // Use Supabase function invocation
           const { data, error: fnError } = await supabase.functions.invoke('facebook-oauth-callback', {
-            body: { code }
+            body: { code, state: platformState }
           });
           
           if (fnError) {
@@ -89,7 +124,7 @@ const AuthCallback = () => {
     };
 
     processOAuthCallback();
-  }, [provider, navigate]);
+  }, [provider, navigate, profile]);
 
   const handleContinue = () => {
     navigate("/app/settings?tab=integrations");
