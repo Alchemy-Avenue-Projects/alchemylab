@@ -544,6 +544,7 @@ export type Database = {
         Row: {
           account_id: string | null
           account_name: string | null
+          auth_code: string | null
           auth_token: string | null
           connected: boolean
           connected_by: string | null
@@ -559,6 +560,7 @@ export type Database = {
         Insert: {
           account_id?: string | null
           account_name?: string | null
+          auth_code?: string | null
           auth_token?: string | null
           connected?: boolean
           connected_by?: string | null
@@ -574,6 +576,7 @@ export type Database = {
         Update: {
           account_id?: string | null
           account_name?: string | null
+          auth_code?: string | null
           auth_token?: string | null
           connected?: boolean
           connected_by?: string | null
