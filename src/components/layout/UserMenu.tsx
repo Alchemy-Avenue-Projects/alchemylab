@@ -11,11 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const UserMenu: React.FC = () => {
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   
   // Use the full name from profile for display name (exactly as it appears)
   const displayName = profile?.full_name || user?.email?.split('@')[0] || "User";
@@ -31,6 +33,17 @@ const UserMenu: React.FC = () => {
         return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
       })()
     : user?.email?.substring(0, 2).toUpperCase() || "U";
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("You have been logged out successfully");
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out. Please try again.");
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -61,7 +74,7 @@ const UserMenu: React.FC = () => {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()}>
+        <DropdownMenuItem onClick={handleSignOut}>
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>

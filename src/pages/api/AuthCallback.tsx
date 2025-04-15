@@ -13,7 +13,7 @@ const AuthCallback = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState<string>("");
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user, session } = useAuth();
 
   useEffect(() => {
     const processOAuthCallback = async () => {
@@ -25,6 +25,7 @@ const AuthCallback = () => {
         const platformState = urlParams.get('state') || 'facebook'; // Default to facebook if no state
         
         console.log(`Processing ${provider || platformState} OAuth callback with code: ${code ? `${code.substring(0, 5)}...` : 'missing'}`);
+        console.log(`Auth state - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}`);
         
         if (error) {
           const errorReason = urlParams.get('error_reason') || 'Unknown error';
@@ -45,7 +46,9 @@ const AuthCallback = () => {
           return;
         }
 
-        if (!profile?.organization_id) {
+        // Check if user is authenticated
+        if (!user) {
+          console.error("User not authenticated, redirecting to login");
           setStatus("error");
           setMessage("You need to be logged in to connect platforms.");
           toast.error("Authentication required", {
@@ -59,15 +62,24 @@ const AuthCallback = () => {
           return;
         }
 
+        // If we don't have a profile yet but we have a user, create a minimal organization connection
+        let organizationId = profile?.organization_id;
+        let userId = user?.id;
+        
+        if (!organizationId) {
+          console.warn("No organization ID found in profile, using user ID as fallback");
+          organizationId = userId;
+        }
+
         // First, store the authorization code in the database
         console.log("Storing authorization code in platform_connections...");
         const { data: connectionData, error: connectionError } = await supabase
           .from('platform_connections')
           .insert({
             platform: platformState,
-            organization_id: profile.organization_id,
+            organization_id: organizationId,
             auth_code: code,
-            connected_by: profile.id,
+            connected_by: userId,
             connected: false  // Not fully connected yet until we exchange the code for a token
           })
           .select()
@@ -124,7 +136,7 @@ const AuthCallback = () => {
     };
 
     processOAuthCallback();
-  }, [provider, navigate, profile]);
+  }, [provider, navigate, profile, user, session]);
 
   const handleContinue = () => {
     navigate("/app/settings?tab=integrations");
