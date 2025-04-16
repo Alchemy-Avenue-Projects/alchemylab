@@ -4,7 +4,7 @@ import { Platform, PlatformConnection } from '@/types/platforms';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { generateOAuthUrl } from '@/services/platforms/oauth-utils';
+import { generateOAuthUrl } from '@/services/platforms/oauth';
 import { toast } from 'sonner';
 
 interface PlatformsContextType {
