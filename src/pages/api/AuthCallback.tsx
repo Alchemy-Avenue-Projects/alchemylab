@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -13,7 +12,7 @@ const AuthCallback = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState<string>("");
   const navigate = useNavigate();
-  const { profile, user, session, loading } = useAuth();
+  const { profile, user, session, isLoading } = useAuth();
 
   useEffect(() => {
     const processOAuthCallback = async () => {
@@ -25,7 +24,7 @@ const AuthCallback = () => {
         const platformState = urlParams.get('state') || 'facebook'; // Default to facebook if no state
         
         console.log(`Processing ${provider || platformState} OAuth callback with code: ${code ? `${code.substring(0, 5)}...` : 'missing'}`);
-        console.log(`Auth state - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}, Loading: ${loading}`);
+        console.log(`Auth state - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}, Loading: ${isLoading}`);
         
         if (error) {
           const errorReason = urlParams.get('error_reason') || 'Unknown error';
@@ -47,7 +46,7 @@ const AuthCallback = () => {
         }
 
         // Wait for auth to be ready if it's still loading
-        if (loading) {
+        if (isLoading) {
           console.log("Auth is still loading, waiting...");
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
@@ -154,7 +153,7 @@ const AuthCallback = () => {
     };
 
     processOAuthCallback();
-  }, [provider, navigate, profile, user, session, loading]);
+  }, [provider, navigate, profile, user, session, isLoading]);
 
   const handleContinue = () => {
     navigate("/app/settings?tab=integrations");
