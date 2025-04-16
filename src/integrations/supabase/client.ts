@@ -9,10 +9,12 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Get token from localStorage
 const getAuthToken = () => {
   try {
-    const tokenString = localStorage.getItem('supabase.auth.token');
+    if (typeof window === 'undefined') return '';
+
+    const tokenString = localStorage.getItem('sb-yiqfsetkcnvudalyntvw-auth-token');
     if (tokenString) {
       const tokenData = JSON.parse(tokenString);
-      return tokenData?.currentSession?.access_token || '';
+      return tokenData?.access_token || '';
     }
     return '';
   } catch (error) {
@@ -21,19 +23,17 @@ const getAuthToken = () => {
   }
 };
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
+// Export the supabase client with the authorization header
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    storage: localStorage
+    storage: typeof window !== 'undefined' ? localStorage : undefined
   },
   global: {
     headers: {
       // Forward auth token to all supabase requests including edge functions
-      'Authorization': `Bearer ${getAuthToken()}`
+      Authorization: `Bearer ${getAuthToken()}`
     }
   }
 });

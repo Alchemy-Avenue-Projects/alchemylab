@@ -21,14 +21,13 @@ export const getOrigin = (): string => {
 
 // Get the appropriate redirect URI based on platform
 export const getRedirectUri = (platform: string): string => {
-  const origin = getOrigin();
-  
-  // For Facebook, the redirect URI must match what's registered in the Facebook Developer Console
+  // For Facebook, the redirect URI must match exactly what's registered in the Facebook Developer Console
   if (platform === 'facebook') {
     // Facebook redirect should go to the api/auth/callback/facebook endpoint
-    return `${origin}/api/auth/callback/facebook`;
+    return `https://alchemylab.app/api/auth/callback/facebook`;
   }
   
-  // Default redirect URI for most platforms
+  // Default redirect URI for most platforms uses the dynamic origin
+  const origin = getOrigin();
   return `${origin}/oauth/callback`;
 };

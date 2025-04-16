@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import CallbackStatusCard from "@/components/oauth/CallbackStatusCard";
-import { processOAuthCallback } from "@/utils/oauth-callback-processor";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const AuthCallback = () => {
   const { provider } = useParams<{ provider: string }>();
@@ -39,20 +40,40 @@ const AuthCallback = () => {
         return;
       }
 
-      await processOAuthCallback({
-        code,
-        error,
-        platformState,
-        userId: user?.id || null,
-        organizationId: profile?.organization_id || null,
-        profile,
-        user,
-        session,
-        isLoading,
-        navigate,
-        setStatus,
-        setMessage
-      });
+      try {
+        // Call the Supabase edge function directly with all needed parameters
+        const { data, error: fnError } = await supabase.functions.invoke('facebook-oauth-callback', {
+          body: { 
+            code, 
+            state: platformState 
+          }
+        });
+        
+        if (fnError) {
+          console.error(`${platformName} OAuth callback error:`, fnError);
+          throw new Error(`Failed to process authentication: ${fnError.message}`);
+        }
+        
+        console.log(`${platformName} OAuth callback result:`, data);
+        
+        setStatus("success");
+        setMessage(`Successfully connected to ${displayPlatform}`);
+        toast.success(`Connected to ${displayPlatform}`, {
+          description: "Your account was successfully connected"
+        });
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          navigate(`/app/settings?tab=integrations&success=${platformName}_connected`);
+        }, 1500);
+      } catch (err) {
+        console.error(`Error calling ${platformName}-oauth-callback:`, err);
+        setStatus("error");
+        setMessage(`Failed to process authentication: ${err.message}`);
+        toast.error("Connection failed", {
+          description: err.message
+        });
+      }
     };
 
     // Don't process immediately to allow auth to initialize
