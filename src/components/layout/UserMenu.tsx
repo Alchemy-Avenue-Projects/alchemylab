@@ -39,7 +39,9 @@ const UserMenu: React.FC = () => {
     try {
       console.log("Signing out...");
       await supabase.auth.signOut();
+      // Don't use the context signOut as it might not be properly implemented
       toast.success("You have been logged out successfully");
+      // Navigate to auth page
       navigate("/auth");
     } catch (error) {
       console.error("Error signing out:", error);

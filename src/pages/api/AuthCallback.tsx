@@ -13,7 +13,7 @@ const AuthCallback = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState<string>("");
   const navigate = useNavigate();
-  const { profile, user, session } = useAuth();
+  const { profile, user, session, loading } = useAuth();
 
   useEffect(() => {
     const processOAuthCallback = async () => {
@@ -25,7 +25,7 @@ const AuthCallback = () => {
         const platformState = urlParams.get('state') || 'facebook'; // Default to facebook if no state
         
         console.log(`Processing ${provider || platformState} OAuth callback with code: ${code ? `${code.substring(0, 5)}...` : 'missing'}`);
-        console.log(`Auth state - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}`);
+        console.log(`Auth state - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}, Loading: ${loading}`);
         
         if (error) {
           const errorReason = urlParams.get('error_reason') || 'Unknown error';
@@ -46,53 +46,75 @@ const AuthCallback = () => {
           return;
         }
 
-        // Store the authorization code directly without checking if user is authenticated
-        // We'll handle authentication in the edge function
+        // Wait for auth to be ready if it's still loading
+        if (loading) {
+          console.log("Auth is still loading, waiting...");
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+
+        // Check if user is authenticated
+        if (!user) {
+          console.warn("User is not authenticated, trying to continue anyway");
+          // We'll try to continue with the edge function and store the code temporarily
+        }
+
+        // Log auth state again after waiting
+        console.log(`Auth state after waiting - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}`);
+
+        // Store the authorization code
         console.log("Storing authorization code in platform_connections...");
         
         // Use the user ID if available, otherwise create a temporary record
         let organizationId = profile?.organization_id;
         let userId = user?.id;
         
-        // We continue even if we don't have a user or organization ID
-        // The edge function will handle this case
-        
-        if (!organizationId && userId) {
-          console.warn("No organization ID found in profile, using user ID as fallback");
-          organizationId = userId;
-        }
-
-        // Only attempt to store if we have either an organization ID or user ID
-        if (organizationId) {
-          const { data: connectionData, error: connectionError } = await supabase
-            .from('platform_connections')
-            .insert({
-              platform: platformState,
-              organization_id: organizationId,
-              auth_code: code,
-              connected_by: userId,
-              connected: false  // Not fully connected yet until we exchange the code for a token
-            })
-            .select()
-            .single();
-            
-          if (connectionError) {
-            console.error("Error storing authorization code:", connectionError);
-            console.log("Will attempt to proceed with the edge function anyway.");
-          } else {
-            console.log("Successfully stored authorization code.");
-          }
+        // If either is missing, try to continue anyway and let the edge function handle it
+        if (!organizationId && !userId) {
+          console.warn("No organization or user ID available - the edge function will handle this.");
         } else {
-          console.log("No organization or user ID available - the edge function will handle this.");
+          if (!organizationId && userId) {
+            console.warn("No organization ID found in profile, using user ID as fallback");
+            organizationId = userId;
+          }
+
+          // Insert the connection data
+          try {
+            const { data: connectionData, error: connectionError } = await supabase
+              .from('platform_connections')
+              .insert({
+                platform: platformState,
+                organization_id: organizationId || 'temp-org-id', // Use a temporary ID if none available
+                auth_code: code,
+                connected_by: userId || 'anonymous',
+                connected: false  // Not fully connected yet until we exchange the code for a token
+              })
+              .select()
+              .single();
+              
+            if (connectionError) {
+              console.error("Error storing authorization code:", connectionError);
+              console.log("Will attempt to proceed with the edge function anyway.");
+            } else {
+              console.log("Successfully stored authorization code.", connectionData);
+            }
+          } catch (dbError) {
+            console.error("Database error:", dbError);
+            // Continue with edge function anyway
+          }
         }
         
-        console.log("Now calling facebook-oauth-callback...");
+        console.log("Now calling facebook-oauth-callback edge function...");
         
-        // Now call the edge function to exchange the code for a token
+        // Call the edge function to exchange the code for a token
         try {
           // Use Supabase function invocation
           const { data, error: fnError } = await supabase.functions.invoke('facebook-oauth-callback', {
-            body: { code, state: platformState }
+            body: { 
+              code, 
+              state: platformState,
+              userId: userId || null,
+              organizationId: organizationId || null
+            }
           });
           
           if (fnError) {
@@ -132,7 +154,7 @@ const AuthCallback = () => {
     };
 
     processOAuthCallback();
-  }, [provider, navigate, profile, user, session]);
+  }, [provider, navigate, profile, user, session, loading]);
 
   const handleContinue = () => {
     navigate("/app/settings?tab=integrations");
@@ -140,6 +162,10 @@ const AuthCallback = () => {
 
   const handleTryAgain = () => {
     navigate("/app/settings?tab=integrations");
+  };
+
+  const handleLogin = () => {
+    navigate("/auth?mode=login");
   };
 
   return (
@@ -183,6 +209,8 @@ const AuthCallback = () => {
             <p className="text-sm text-muted-foreground">This may take a few moments...</p>
           ) : status === "success" ? (
             <Button onClick={handleContinue}>Continue to Dashboard</Button>
+          ) : message?.includes("not logged in") || message?.includes("authenticated") ? (
+            <Button variant="outline" onClick={handleLogin}>Log in</Button>
           ) : (
             <Button variant="outline" onClick={handleTryAgain}>Back to Settings</Button>
           )}

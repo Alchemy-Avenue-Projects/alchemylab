@@ -13,13 +13,18 @@ const CONFIG = {
  * Generate OAuth URL for various platforms
  */
 export const generateOAuthUrl = (platform: Platform): string => {
+  // Get the current origin, ensuring it's using https if not localhost
+  const origin = window.location.origin;
+  const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+  
   // Default redirect URI for most platforms
-  let redirectUri = `${window.location.origin}/oauth/callback`;
+  let redirectUri = `${origin}/oauth/callback`;
   
   // For Facebook, the redirect URI must match what's registered in the Facebook Developer Console
   if (platform === 'facebook') {
-    // This must match the redirect URI registered in the Facebook Developer Console
-    redirectUri = `${window.location.origin}/api/auth/callback/facebook`;
+    // Facebook redirect should go to the api/auth/callback/facebook endpoint
+    redirectUri = `${origin}/api/auth/callback/facebook`;
+    console.log(`Generated Facebook redirect URI: ${redirectUri}`);
   }
   
   switch (platform) {
