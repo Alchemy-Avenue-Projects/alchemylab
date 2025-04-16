@@ -57,13 +57,24 @@ export const processOAuthCallback = async ({
     // Wait for auth to be ready if it's still loading
     if (isLoading) {
       console.log("Auth is still loading, waiting...");
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     // Check if user is authenticated
     if (!user) {
-      console.warn("User is not authenticated, trying to continue anyway");
-      // We'll try to continue with the edge function and store the code temporarily
+      console.warn("User is not authenticated, redirecting to login...");
+      setStatus("error");
+      setMessage("You need to be logged in to connect platforms. Please log in and try again.");
+      toast.error("Authentication required", {
+        description: "You need to be logged in to connect platforms."
+      });
+      // Save the OAuth state to session storage to resume after login
+      sessionStorage.setItem('pendingOAuthCode', code);
+      sessionStorage.setItem('pendingOAuthPlatform', platformState);
+      setTimeout(() => {
+        navigate("/auth?mode=login");
+      }, 2000);
+      return;
     }
 
     // Log auth state again after waiting
@@ -111,12 +122,16 @@ export const processOAuthCallback = async ({
       }
     }
     
-    console.log("Now calling facebook-oauth-callback edge function...");
+    console.log(`Now calling ${platformState}-oauth-callback edge function...`);
     
     // Call the edge function to exchange the code for a token
     try {
-      // Use Supabase function invocation
-      const { data, error: fnError } = await supabase.functions.invoke('facebook-oauth-callback', {
+      // Use Supabase function invocation with a timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Function call timed out")), 15000)
+      );
+      
+      const functionPromise = supabase.functions.invoke('facebook-oauth-callback', {
         body: { 
           code, 
           state: platformState,
@@ -125,26 +140,34 @@ export const processOAuthCallback = async ({
         }
       });
       
+      // Race the function call against the timeout
+      const { data, error: fnError } = await Promise.race([
+        functionPromise,
+        timeoutPromise.then(() => {
+          throw new Error("Function call timed out after 15 seconds");
+        })
+      ]) as any;
+      
       if (fnError) {
-        console.error("Facebook OAuth callback error:", fnError);
+        console.error(`${platformState} OAuth callback error:`, fnError);
         throw new Error(`Failed to process authentication: ${fnError.message}`);
       }
       
-      console.log("Facebook OAuth callback result:", data);
+      console.log(`${platformState} OAuth callback result:`, data);
       
       setStatus("success");
-      setMessage(`Successfully connected to Facebook`);
-      toast.success(`Connected to Facebook`, {
+      setMessage(`Successfully connected to ${platformState.charAt(0).toUpperCase() + platformState.slice(1)}`);
+      toast.success(`Connected to ${platformState.charAt(0).toUpperCase() + platformState.slice(1)}`, {
         description: "Your account was successfully connected"
       });
       
       // Redirect after a short delay
       setTimeout(() => {
-        navigate("/app/settings?tab=integrations&success=facebook_connected");
+        navigate(`/app/settings?tab=integrations&success=${platformState}_connected`);
       }, 1500);
       
     } catch (error: any) {
-      console.error("Error calling facebook-oauth-callback:", error);
+      console.error(`Error calling ${platformState}-oauth-callback:`, error);
       setStatus("error");
       setMessage(`Failed to process authentication: ${error.message}`);
       toast.error("Connection failed", {

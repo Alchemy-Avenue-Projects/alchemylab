@@ -8,9 +8,8 @@ import { OAUTH_CONFIG, getRedirectUri } from './config';
 export const generateOAuthUrl = (platform: Platform): string => {
   const redirectUri = getRedirectUri(platform);
   
-  if (platform === 'facebook') {
-    console.log(`Generated Facebook redirect URI: ${redirectUri}`);
-  }
+  // For debugging
+  console.log(`Generated ${platform} redirect URI: ${redirectUri}`);
   
   switch (platform) {
     case 'facebook':
@@ -29,15 +28,9 @@ export const generateOAuthUrl = (platform: Platform): string => {
       return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/analytics.readonly&state=${platform}&access_type=offline&prompt=consent`;
     
     case 'mixpanel':
-      // For now, we'll just return an empty string as this would need a real client ID
-      return '';
-    
     case 'amplitude':
-      // Amplitude uses API keys instead of OAuth
-      return '';
-    
     case 'openai':
-      // OpenAI uses API keys instead of OAuth
+      // These platforms use API keys instead of OAuth
       return '';
     
     default:

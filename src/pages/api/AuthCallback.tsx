@@ -8,9 +8,13 @@ import { processOAuthCallback } from "@/utils/oauth-callback-processor";
 const AuthCallback = () => {
   const { provider } = useParams<{ provider: string }>();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState<string>("");
+  const [message, setMessage] = useState<string>("Processing your connection...");
   const navigate = useNavigate();
   const { profile, user, session, isLoading } = useAuth();
+
+  // Ensure proper platform name display
+  const platformName = provider || 'facebook';
+  const displayPlatform = platformName.charAt(0).toUpperCase() + platformName.slice(1);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -18,8 +22,23 @@ const AuthCallback = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const error = urlParams.get('error');
-      const platformState = urlParams.get('state') || 'facebook'; // Default to facebook if no state
+      const platformState = urlParams.get('state') || platformName;
       
+      console.log(`Processing OAuth callback for ${platformName} with code: ${code ? `${code.substring(0, 5)}...` : 'missing'}`);
+      console.log(`Auth state - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}, Loading: ${isLoading}`);
+      
+      if (error) {
+        setStatus("error");
+        setMessage(`Authorization error: ${error}`);
+        return;
+      }
+      
+      if (!code) {
+        setStatus("error");
+        setMessage("No authorization code found in the callback URL");
+        return;
+      }
+
       await processOAuthCallback({
         code,
         error,
@@ -36,8 +55,13 @@ const AuthCallback = () => {
       });
     };
 
-    handleCallback();
-  }, [provider, navigate, profile, user, session, isLoading]);
+    // Don't process immediately to allow auth to initialize
+    const timer = setTimeout(() => {
+      handleCallback();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [provider, navigate, profile, user, session, isLoading, platformName]);
 
   const handleContinue = () => {
     navigate("/app/settings?tab=integrations");
@@ -55,7 +79,7 @@ const AuthCallback = () => {
     <CallbackStatusCard
       status={status}
       message={message}
-      provider={provider || 'Facebook'}
+      provider={displayPlatform}
       onContinue={handleContinue}
       onTryAgain={handleTryAgain}
       onLogin={handleLogin}

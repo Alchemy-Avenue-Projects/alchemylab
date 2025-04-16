@@ -10,6 +10,12 @@ export const OAUTH_CONFIG = {
 // Get the current origin, ensuring it's using https if not localhost
 export const getOrigin = (): string => {
   const origin = window.location.origin;
+  
+  // Ensure we're using HTTPS for production by checking if we're not on localhost
+  if (!origin.includes('localhost') && !origin.includes('127.0.0.1') && !origin.startsWith('https://')) {
+    return origin.replace('http://', 'https://');
+  }
+  
   return origin;
 };
 

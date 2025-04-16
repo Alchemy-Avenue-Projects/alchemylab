@@ -1,9 +1,12 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import { AISuggestionsList } from "@/components/dashboard/AISuggestionsList";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 // Temporary placeholder component
 const PlaceholderCard = ({ title }: { title: string }) => (
@@ -14,6 +17,45 @@ const PlaceholderCard = ({ title }: { title: string }) => (
 );
 
 const Dashboard: React.FC = () => {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Check for auth and redirect if not logged in
+  useEffect(() => {
+    if (!isLoading && !user) {
+      toast.error("Please log in to access the dashboard", {
+        description: "You need to be logged in to view this page."
+      });
+      navigate("/auth?mode=login");
+    }
+    
+    // Check for pending OAuth flow
+    const pendingCode = sessionStorage.getItem('pendingOAuthCode');
+    const pendingPlatform = sessionStorage.getItem('pendingOAuthPlatform');
+    
+    if (user && pendingCode && pendingPlatform) {
+      sessionStorage.removeItem('pendingOAuthCode');
+      sessionStorage.removeItem('pendingOAuthPlatform');
+      
+      toast.info("Resuming platform connection", {
+        description: `Continuing with your ${pendingPlatform} connection...`
+      });
+      
+      // Navigate to the appropriate platform callback
+      setTimeout(() => {
+        navigate(`/api/auth/callback/${pendingPlatform}?code=${pendingCode}&state=${pendingPlatform}`);
+      }, 1000);
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -31,10 +30,10 @@ export default function Auth() {
   // Get the selected plan from localStorage
   const selectedPlan = localStorage.getItem('selectedPlan');
   
-  // Redirect if already logged in
+  // Redirect if already logged in - Change to dashboard
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/app'); // Redirect to dashboard instead of homepage
     }
   }, [user, navigate]);
   
@@ -50,7 +49,7 @@ export default function Auth() {
           title: "Welcome back!",
           description: "You've successfully logged in.",
         });
-        navigate('/');
+        navigate('/app'); // Redirect to dashboard instead of homepage
       } else {
         const { error } = await signUp(email, password, fullName);
         if (error) throw error;
