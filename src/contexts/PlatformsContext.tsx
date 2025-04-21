@@ -71,7 +71,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const connectPlatform = async (platform: Platform) => {
     try {
       // Generate the OAuth URL for this platform
-      const oauthUrl = generateOAuthUrl(platform);
+      const oauthUrl = await generateOAuthUrl(platform);
       
       if (!oauthUrl) {
         // For platforms that use API keys instead of OAuth
