@@ -17,7 +17,7 @@ export const generateOAuthUrl = (platform: Platform): string => {
     case 'facebook':
       const state = ""; // keep static for now
       return [
-        "https://www.facebook.com/v22.0/dialog/oauth",
+        "https://www.facebook.com/v22.0/dialog/oauth?",
         `client_id=${FB_APP_ID}`,
         `redirect_uri=${SUPA_FN_URL}/facebook-oauth-callback`,
         "scope=ads_read,ads_management",
