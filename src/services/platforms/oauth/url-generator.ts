@@ -1,8 +1,8 @@
 
 import { Platform } from '@/types/platforms';
 import { OAUTH_CONFIG, getRedirectUri } from './config';
-const FB_APP_ID   = import.meta.env.VITE_FACEBOOK_APP_ID;
-const SUPA_FN_URL = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
+const FB_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
+const FN_BASE   = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
 
 /**
  * Generate OAuth URL for various platforms
@@ -19,7 +19,7 @@ export const generateOAuthUrl = (platform: Platform): string => {
       return [
         "https://www.facebook.com/v22.0/dialog/oauth?",
         `client_id=${FB_APP_ID}`,
-        `redirect_uri=${SUPA_FN_URL}/facebook-oauth-callback`,
+        `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
         "scope=ads_read,ads_management",
         "response_type=code",
         `state=${state}`
