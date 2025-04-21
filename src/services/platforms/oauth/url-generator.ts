@@ -3,6 +3,7 @@ import { Platform } from '@/types/platforms';
 import { OAUTH_CONFIG, getRedirectUri } from './config';
 const FB_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
 const FN_BASE   = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Generate OAuth URL for various platforms
@@ -14,8 +15,12 @@ export const generateOAuthUrl = (platform: Platform): string => {
   console.log(`Generated ${platform} redirect URI: ${redirectUri}`);
   
   switch (platform) {
-    case 'facebook':
-      const state = ""; // keep static for now
+    case "facebook": {
+      // grab JWT so Edge function can identify the user
+      const { data: { session } } = await supabase.auth.getSession();
+      const jwt  = session?.access_token || "";
+      const state = encodeURIComponent(JSON.stringify({ jwt }));
+
       return [
         "https://www.facebook.com/v22.0/dialog/oauth?",
         `client_id=${FB_APP_ID}`,
@@ -24,6 +29,7 @@ export const generateOAuthUrl = (platform: Platform): string => {
         "response_type=code",
         `state=${state}`
       ].join("&");
+    }
 
     case 'google':
       return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/adwords&state=${platform}&access_type=offline&prompt=consent`;
