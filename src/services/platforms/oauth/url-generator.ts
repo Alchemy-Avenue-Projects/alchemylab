@@ -13,8 +13,16 @@ export const generateOAuthUrl = (platform: Platform): string => {
   
   switch (platform) {
     case 'facebook':
-      return `https://www.facebook.com/v22.0/dialog/oauth?client_id=${OAUTH_CONFIG.FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${platform}&scope=ads_management,ads_read,pages_show_list&response_type=code`;
-    
+      const state = ""; // keep static for now
+      return [
+        "https://www.facebook.com/v22.0/dialog/oauth",
+        `client_id=${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}`,
+        `redirect_uri=https://yiqfsetkcnvudalyntvw.supabase.co/functions/v1/facebook-oauth-callback`,
+        "scope=ads_read,ads_management",
+        "response_type=code",
+        `state=${state}`
+      ].join("&");
+
     case 'google':
       return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/adwords&state=${platform}&access_type=offline&prompt=consent`;
     
