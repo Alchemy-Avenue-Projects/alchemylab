@@ -16,7 +16,7 @@ export const generateOAuthUrl = (platform: Platform): string => {
       const state = ""; // keep static for now
       return [
         "https://www.facebook.com/v22.0/dialog/oauth",
-        `client_id=${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}`,
+        `client_id=${import.meta.env.VITE_FACEBOOK_APP_ID}`,
         `redirect_uri=https://yiqfsetkcnvudalyntvw.supabase.co/functions/v1/facebook-oauth-callback`,
         "scope=ads_read,ads_management",
         "response_type=code",
