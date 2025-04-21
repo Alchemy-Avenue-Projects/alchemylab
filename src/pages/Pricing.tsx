@@ -1,8 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PublicHeader from "@/components/layout/PublicHeader";
-import PublicFooter from "@/components/layout/PublicFooter";
+import LandingLayout from "@/components/layout/LandingLayout";
 import PricingHeader from "@/components/pricing/PricingHeader";
 import PricingPlan from "@/components/pricing/PricingPlan";
 import EnterpriseContact from "@/components/pricing/EnterpriseContact";
@@ -19,8 +18,7 @@ export default function Pricing() {
   };
   
   return (
-    <>
-      <PublicHeader />
+    <LandingLayout>
       <section className="py-20">
         <div className="container">
           <PricingHeader period={period} setPeriod={setPeriod} />
@@ -45,7 +43,6 @@ export default function Pricing() {
           <PricingFAQ />
         </div>
       </section>
-      <PublicFooter />
-    </>
+    </LandingLayout>
   );
 }

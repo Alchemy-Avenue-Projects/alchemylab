@@ -4,6 +4,9 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/icons/Logo";
 
+/**
+ * @deprecated Use LandingLayout instead which includes a header with proper auth state handling
+ */
 const PublicHeader: React.FC = () => {
   return (
     <header className="border-b border-border py-4">

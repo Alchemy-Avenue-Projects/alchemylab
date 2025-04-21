@@ -1,7 +1,6 @@
 
 import React from "react";
-import PublicHeader from "@/components/layout/PublicHeader";
-import PublicFooter from "@/components/layout/PublicFooter";
+import LandingLayout from "@/components/layout/LandingLayout";
 import FeaturesHeader from "@/components/features/FeaturesHeader";
 import FeatureSection from "@/components/features/FeatureSection";
 import FeatureCard from "@/components/features/FeatureCard";
@@ -12,9 +11,7 @@ import { mainFeatures, additionalFeatures } from "@/components/features/features
 
 export default function Features() {
   return (
-    <>
-      <PublicHeader />
-      
+    <LandingLayout>
       <section className="py-20 md:py-28">
         <div className="container">
           <FeaturesHeader />
@@ -57,7 +54,6 @@ export default function Features() {
       </section>
 
       <FeaturesCTA />
-      <PublicFooter />
-    </>
+    </LandingLayout>
   );
 }
