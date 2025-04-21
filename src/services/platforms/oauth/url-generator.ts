@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 /**
  * Generate OAuth URL for various platforms
  */
-export const generateOAuthUrl = (platform: Platform): string => {
+export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
   const redirectUri = getRedirectUri(platform);
   
   // For debugging
