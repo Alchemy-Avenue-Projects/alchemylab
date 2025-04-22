@@ -90,9 +90,13 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
 const handleRequest = async (req: Request) => {
   try {
     const url = new URL(req.url);
-    const code = url.searchParams.get("code") || "";
-    const error = url.searchParams.get("error") || "";
-    const state = url.searchParams.get("state") || "{}";
+    const code = url.searchParams.get('code') ?? '';
+    const error = url.searchParams.get('error') ?? '';
+    const state = url.searchParams.get('state') ?? '{}';
+
+    const parsedState = JSON.parse(state);
+    const jwt = parsedState.jwt ?? '';
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '') || jwt;
 
     
     logInfo("Received OAuth callback", { 
