@@ -89,7 +89,11 @@ const exchangeCodeForToken = async (code: string, redirectUri: string) => {
 
 const handleRequest = async (req: Request) => {
   try {
-    const { code, error, state } = await req.json();
+    const url = new URL(req.url);
+    const code = url.searchParams.get("code") || "";
+    const error = url.searchParams.get("error") || "";
+    const state = url.searchParams.get("state") || "{}";
+
     
     logInfo("Received OAuth callback", { 
       code: code ? `${code.substring(0, 5)}...` : null,
