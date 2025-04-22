@@ -48,7 +48,17 @@ if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange(() => {
     // Update global headers with new token
     const token = getAuthToken();
-    // Instead of using the non-existent setAuth method, update the global headers directly
-    supabase.rest.headers.authorization = `Bearer ${token}`;
+    
+    // Use the proper API to update headers
+    // The 'rest' property is protected, so we can't access it directly
+    // Instead, recreate the supabase client with the new token
+    // This is a temporary solution until a better API is provided
+    
+    // However, since we can't reassign the exported constant, 
+    // we can update the global headers property which is accessible
+    supabase.functions.setAuthHeader(`Bearer ${token}`);
+    
+    // Log the token update for debugging
+    console.log('Updated Supabase auth token after state change');
   });
 }
