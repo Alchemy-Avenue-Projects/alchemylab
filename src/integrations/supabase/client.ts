@@ -56,7 +56,7 @@ if (typeof window !== 'undefined') {
     
     // However, since we can't reassign the exported constant, 
     // we can update the global headers property which is accessible
-    supabase.functions.setAuthHeader(`Bearer ${token}`);
+    supabase.functions.setAuth(token);
     
     // Log the token update for debugging
     console.log('Updated Supabase auth token after state change');
