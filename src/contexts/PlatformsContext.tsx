@@ -70,6 +70,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const connectPlatform = async (platform: Platform) => {
     try {
+      console.log("[connectPlatform] Called for platform:", platform);
       console.log(`Starting OAuth flow for ${platform}...`);
       
       // Check for valid session before proceeding
@@ -93,6 +94,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Generate the OAuth URL for this platform
       try {
         const oauthUrl = await generateOAuthUrl(platform);
+        console.log("[connectPlatform] OAuth URL:", oauthUrl);
         
         if (!oauthUrl) {
           throw new Error(`OAuth URL generation failed for ${platform}`);
