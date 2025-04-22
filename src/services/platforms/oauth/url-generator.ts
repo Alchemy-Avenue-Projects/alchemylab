@@ -20,6 +20,7 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
       const { data: { session } } = await supabase.auth.getSession();
       const jwt  = session?.access_token || "";
       const state = encodeURIComponent(JSON.stringify({ jwt }));
+      console.log("JWT (for state param):", jwt);
 
       return [
         "https://www.facebook.com/v22.0/dialog/oauth?",
