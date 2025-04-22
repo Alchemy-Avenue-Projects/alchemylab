@@ -72,32 +72,37 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       console.log(`Starting OAuth flow for ${platform}...`);
       
-      // Generate the OAuth URL for this platform
-      const oauthUrl = await generateOAuthUrl(platform);
-      
-      if (!oauthUrl) {
-        // For platforms that use API keys instead of OAuth
-        if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
-          // Redirect to the settings page with a query param to show the API key form
-          window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
-          return;
-        }
-        
-        throw new Error(`OAuth URL generation failed for ${platform}`);
+      // For platforms that use API keys instead of OAuth
+      if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
+        // Redirect to the settings page with a query param to show the API key form
+        window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
+        return;
       }
       
-      console.log(`Opening OAuth URL for ${platform}: ${oauthUrl}`);
-      
-      // Show a toast before redirecting
-      toast.info("Redirecting to authentication page", {
-        description: `Please complete the ${platform} authentication to continue.`
-      });
-      
-      // Add a small delay before redirecting to ensure toast is shown
-      setTimeout(() => {
-        // Redirect to the OAuth URL
-        window.location.href = oauthUrl;
-      }, 500);
+      // Generate the OAuth URL for this platform - now properly awaiting the Promise
+      try {
+        const oauthUrl = await generateOAuthUrl(platform);
+        
+        if (!oauthUrl) {
+          throw new Error(`OAuth URL generation failed for ${platform}`);
+        }
+        
+        console.log(`Opening OAuth URL for ${platform}: ${oauthUrl}`);
+        
+        // Show a toast before redirecting
+        toast.info("Redirecting to authentication page", {
+          description: `Please complete the ${platform} authentication to continue.`
+        });
+        
+        // Add a small delay before redirecting to ensure toast is shown
+        setTimeout(() => {
+          // Redirect to the OAuth URL
+          window.location.href = oauthUrl;
+        }, 500);
+      } catch (error) {
+        console.error(`Error generating OAuth URL for ${platform}:`, error);
+        throw new Error(`Failed to generate OAuth URL: ${error.message}`);
+      }
       
     } catch (err) {
       console.error(`Error connecting to ${platform}:`, err);

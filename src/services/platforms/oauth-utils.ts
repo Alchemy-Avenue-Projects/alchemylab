@@ -8,7 +8,8 @@ import { generateOAuthUrl as newGenerateOAuthUrl } from './oauth/url-generator';
 import { parseOAuthRedirect as newParseOAuthRedirect } from './oauth/response-parser';
 
 // Re-export the functions to maintain backward compatibility
-export const generateOAuthUrl = (platform: Platform): string => {
+// Make this an async function to match the return type of newGenerateOAuthUrl
+export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
   return newGenerateOAuthUrl(platform);
 };
 

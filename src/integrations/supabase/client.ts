@@ -47,6 +47,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange(() => {
     // Update global headers with new token
-    supabase.setAuth(getAuthToken());
+    const token = getAuthToken();
+    // Instead of using the non-existent setAuth method, update the global headers directly
+    supabase.rest.headers.authorization = `Bearer ${token}`;
   });
 }
