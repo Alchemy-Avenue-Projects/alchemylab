@@ -18,7 +18,7 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
     case "facebook": {
       try {
         // Force a fresh session check
-        const { data, error } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
 
         if (error) {
           console.error("Failed to get Supabase session:", error);
@@ -30,17 +30,17 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
           throw new Error("No active session. Please sign in again.");
         }
       
-        const jwt = data.session.access_token;
+        const jwt = session?.access_token || '';
         const state = encodeURIComponent(JSON.stringify({ jwt }));
 
-        const url = [
-          "https://www.facebook.com/v22.0/dialog/oauth?",
-          `client_id=${FB_APP_ID}`,
-          `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
-          "scope=ads_read,ads_management",
-          "response_type=code",
-          `state=${state}`
-        ].join("&");
+        return [
+        'https://www.facebook.com/v22.0/dialog/oauth?',
+        `client_id=${FB_APP_ID}`,
+        `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
+        'scope=ads_read,ads_management',
+        'response_type=code',
+        `state=${state}`
+      ].join('&');
 
         console.log("Final Facebook OAuth URL:", url);
         
