@@ -22,7 +22,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [connections, setConnections] = useState<PlatformConnection[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const { toast: uiToast } = useToast();
 
   const refreshConnections = async () => {
@@ -72,6 +72,14 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       console.log(`Starting OAuth flow for ${platform}...`);
       
+      // Check for valid session before proceeding
+      if (!session || !session.access_token) {
+        toast.error("Authentication Required", { 
+          description: "You need to be logged in with an active session to connect platforms" 
+        });
+        return;
+      }
+      
       // For platforms that use API keys instead of OAuth
       if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
         // Redirect to the settings page with a query param to show the API key form
@@ -79,7 +87,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
       
-      // Generate the OAuth URL for this platform - now properly awaiting the Promise
+      // Generate the OAuth URL for this platform
       try {
         const oauthUrl = await generateOAuthUrl(platform);
         

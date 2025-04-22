@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +15,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 const UserMenu: React.FC = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Use the full name from profile for display name (exactly as it appears)
   const displayName = profile?.full_name || user?.email?.split('@')[0] || "User";
@@ -37,15 +39,27 @@ const UserMenu: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
+      setIsLoggingOut(true);
       console.log("Signing out...");
-      await supabase.auth.signOut();
-      // Don't use the context signOut as it might not be properly implemented
+      
+      // Call the Supabase auth signOut method
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Show success toast
       toast.success("You have been logged out successfully");
-      // Navigate to auth page
-      navigate("/auth");
+      
+      // Navigate to auth page after a short delay
+      setTimeout(() => {
+        navigate("/auth");
+      }, 500);
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");
+      setIsLoggingOut(false);
     }
   };
 
@@ -78,8 +92,17 @@ const UserMenu: React.FC = () => {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
-          Log out
+        <DropdownMenuItem 
+          onClick={handleSignOut}
+          disabled={isLoggingOut}
+          className="relative"
+        >
+          {isLoggingOut ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Logging out...
+            </>
+          ) : "Log out"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
