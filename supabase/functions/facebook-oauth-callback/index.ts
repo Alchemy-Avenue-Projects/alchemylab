@@ -160,7 +160,7 @@ const handleRequest = async (req: Request) => {
       }
       
       // IMPORTANT: Use the real app domain that is registered in Facebook Developer Console
-      const redirectUri = `https://alchemylab.app/api/auth/callback/facebook`;
+      const redirectUri = `https://api.alchemylab.app/facebook-oauth-callback`;
       
       try {
         // Try to exchange the code for a token
@@ -251,7 +251,7 @@ const handleRequest = async (req: Request) => {
       }
       
       // IMPORTANT: Use the real app domain that is registered in Facebook Developer Console
-      const redirectUri = `https://alchemylab.app/api/auth/callback/facebook`;
+      const redirectUri = `https://api.alchemylab.app/facebook-oauth-callback`;
       
       // Try to exchange the code for a token
       const tokenData = await exchangeCodeForToken(code, redirectUri);
@@ -322,7 +322,7 @@ const handleRequest = async (req: Request) => {
     }
     
     // IMPORTANT: Use the real app domain that is registered in Facebook Developer Console
-    const redirectUri = `https://alchemylab.app/api/auth/callback/facebook`;
+    const redirectUri = `https://api.alchemylab.app/facebook-oauth-callback`;
     
     // Try to exchange the code for a token
     const tokenData = await exchangeCodeForToken(code, redirectUri);
