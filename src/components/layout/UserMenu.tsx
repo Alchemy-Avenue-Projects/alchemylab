@@ -42,7 +42,7 @@ const UserMenu: React.FC = () => {
       setIsLoggingOut(true);
       console.log("Signing out...");
       
-      // Call the Supabase auth signOut method
+      // Call the Supabase auth signOut method directly
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -55,10 +55,12 @@ const UserMenu: React.FC = () => {
       // Navigate to auth page after a short delay
       setTimeout(() => {
         navigate("/auth");
-      }, 500);
+      }, 1000); // Increased delay to ensure session is fully cleared
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");
+    } finally {
+      // Ensure loading state is reset even on error
       setIsLoggingOut(false);
     }
   };

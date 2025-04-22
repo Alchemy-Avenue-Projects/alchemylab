@@ -17,19 +17,20 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
   switch (platform) {
     case "facebook": {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Force a fresh session check
+        const { data, error } = await supabase.auth.getSession();
 
         if (error) {
           console.error("Failed to get Supabase session:", error);
-          return "";
+          throw new Error("Authentication required. Please sign in again.");
         }
 
-        if (!session) {
-          console.error("No session found");
-          return "";
+        if (!data.session || !data.session.access_token) {
+          console.error("No valid session found");
+          throw new Error("No active session. Please sign in again.");
         }
       
-        const jwt = session.access_token;
+        const jwt = data.session.access_token;
         const state = encodeURIComponent(JSON.stringify({ jwt }));
 
         const url = [

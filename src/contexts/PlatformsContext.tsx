@@ -73,7 +73,10 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.log(`Starting OAuth flow for ${platform}...`);
       
       // Check for valid session before proceeding
-      if (!session || !session.access_token) {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession || !currentSession.access_token) {
+        console.error("No active session found");
         toast.error("Authentication Required", { 
           description: "You need to be logged in with an active session to connect platforms" 
         });
