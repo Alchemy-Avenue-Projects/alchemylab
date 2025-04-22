@@ -24,7 +24,7 @@ export const getRedirectUri = (platform: string): string => {
   // For Facebook, the redirect URI must match exactly what's registered in the Facebook Developer Console
   if (platform === 'facebook') {
     // Facebook redirect should go to the api/auth/callback/facebook endpoint
-    return `https://alchemylab.app/api/auth/callback/facebook`;
+    return `https://api.alchemylab.app/facebook-oauth-callback`;
   }
   
   // Default redirect URI for most platforms uses the dynamic origin
