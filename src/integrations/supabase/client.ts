@@ -13,8 +13,13 @@ const getAuthToken = () => {
 
     const tokenString = localStorage.getItem('sb-yiqfsetkcnvudalyntvw-auth-token');
     if (tokenString) {
-      const tokenData = JSON.parse(tokenString);
-      return tokenData?.access_token || '';
+      try {
+        const tokenData = JSON.parse(tokenString);
+        return tokenData?.access_token || '';
+      } catch (e) {
+        console.error('Error parsing auth token:', e);
+        return '';
+      }
     }
     return '';
   } catch (error) {
@@ -23,7 +28,7 @@ const getAuthToken = () => {
   }
 };
 
-// Export the supabase client with the authorization header
+// Create client with dynamic auth headers
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
@@ -37,3 +42,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     }
   }
 });
+
+// Add an event listener to update headers when auth state changes
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange(() => {
+    // Update global headers with new token
+    supabase.setAuth(getAuthToken());
+  });
+}

@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlatforms } from "@/contexts/PlatformsContext";
 import PlatformCategory from "./integration/PlatformCategory";
 import ApiKeyDialog from "./integration/ApiKeyDialog";
+import { toast } from "sonner";
 
 // Define platform categories - Remove Pinterest
 const adPlatforms = [
@@ -28,13 +29,13 @@ const aiPlatforms = [
 ];
 
 const IntegrationsTab: React.FC = () => {
-  const { connections, isLoading, connectPlatform, disconnectPlatform, refreshConnections } = usePlatforms();
+  const { connections, isLoading, error, connectPlatform, disconnectPlatform, refreshConnections } = usePlatforms();
   const [searchParams, setSearchParams] = useSearchParams();
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const { profile } = useAuth();
 
   useEffect(() => {
@@ -48,21 +49,41 @@ const IntegrationsTab: React.FC = () => {
       // Clear the query params
       setSearchParams({});
     }
+    
+    // Check if we have success param
+    const success = searchParams.get('success');
+    if (success) {
+      toast.success('Connection Successful', {
+        description: `${success.replace('_', ' ')} was successfully connected`
+      });
+      refreshConnections();
+      setSearchParams({});
+    }
   }, [searchParams, setSearchParams]);
 
   const handleConnect = async (platform: Platform) => {
+    if (!profile) {
+      toast.error("Authentication Required", { 
+        description: "You need to be logged in to connect platforms" 
+      });
+      return;
+    }
+    
     try {
+      console.log(`Connecting to ${platform}...`);
       setConnectingPlatform(platform);
+      
+      // Add a debug toast to see if this function is being called
+      toast.info(`Connecting to ${platform}...`);
+      
       await connectPlatform(platform);
     } catch (error) {
       console.error(`Error connecting to ${platform}:`, error);
-      toast({
-        title: "Connection Failed",
-        description: `Failed to connect to ${platform}. Please try again.`,
-        variant: "destructive"
+      toast.error("Connection Failed", {
+        description: `Failed to connect to ${platform}. Please try again.`
       });
     } finally {
-      setConnectingPlatform(null);
+      // We're keeping the loading state here as the page should redirect
     }
   };
 
@@ -72,10 +93,8 @@ const IntegrationsTab: React.FC = () => {
       await disconnectPlatform(connectionId);
     } catch (error) {
       console.error(`Error disconnecting:`, error);
-      toast({
-        title: "Disconnection Failed",
-        description: "Failed to disconnect platform. Please try again.",
-        variant: "destructive"
+      toast.error("Disconnection Failed", {
+        description: "Failed to disconnect platform. Please try again."
       });
     } finally {
       setDisconnectingId(null);
@@ -100,9 +119,8 @@ const IntegrationsTab: React.FC = () => {
       
       if (error) throw error;
       
-      toast({
-        title: 'Connected Successfully',
-        description: `${currentPlatform} has been connected using your API key.`,
+      toast.success('Connected Successfully', {
+        description: `${currentPlatform} has been connected using your API key.`
       });
       
       // Refresh the connections list
@@ -113,18 +131,31 @@ const IntegrationsTab: React.FC = () => {
       setCurrentPlatform(null);
     } catch (err) {
       console.error('Error saving API key:', err);
-      toast({
-        title: 'Connection Failed',
-        description: 'There was an error connecting with your API key.',
-        variant: 'destructive',
+      toast.error('Connection Failed', {
+        description: 'There was an error connecting with your API key.'
       });
     }
   };
 
-  if (isLoading) {
+  if (isLoading && connections.length === 0) {
     return (
       <div className="flex justify-center items-center h-60">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 border border-red-200 rounded-md bg-red-50 text-red-800">
+        <h3 className="font-medium">Error loading integrations</h3>
+        <p>{error}</p>
+        <button 
+          onClick={refreshConnections} 
+          className="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 rounded-md text-sm"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

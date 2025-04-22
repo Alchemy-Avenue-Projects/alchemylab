@@ -70,12 +70,14 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const connectPlatform = async (platform: Platform) => {
     try {
+      console.log(`Starting OAuth flow for ${platform}...`);
+      
       // Generate the OAuth URL for this platform
       const oauthUrl = await generateOAuthUrl(platform);
       
       if (!oauthUrl) {
         // For platforms that use API keys instead of OAuth
-        if (platform === 'openai' || platform === 'amplitude') {
+        if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
           // Redirect to the settings page with a query param to show the API key form
           window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
           return;
@@ -86,15 +88,20 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       console.log(`Opening OAuth URL for ${platform}: ${oauthUrl}`);
       
-      // Redirect to the OAuth URL
-      window.location.href = oauthUrl;
-      
+      // Show a toast before redirecting
       toast.info("Redirecting to authentication page", {
         description: `Please complete the ${platform} authentication to continue.`
       });
+      
+      // Add a small delay before redirecting to ensure toast is shown
+      setTimeout(() => {
+        // Redirect to the OAuth URL
+        window.location.href = oauthUrl;
+      }, 500);
+      
     } catch (err) {
       console.error(`Error connecting to ${platform}:`, err);
-      setError(`Failed to connect to ${platform}.`);
+      setError(`Failed to connect to ${platform}: ${err.message}`);
       toast.error(`Connection Error`, {
         description: `Failed to connect to ${platform}: ${err.message}`
       });

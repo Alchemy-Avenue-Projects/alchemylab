@@ -20,14 +20,14 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
-        console.error("Failed to get Supabase session:", error);
-        return "";
-      }
+          console.error("Failed to get Supabase session:", error);
+          return "";
+        }
 
         if (!session) {
-        console.error("No session found");
-        return "";
-      }
+          console.error("No session found");
+          return "";
+        }
       
         const jwt = session.access_token;
         const state = encodeURIComponent(JSON.stringify({ jwt }));
@@ -42,10 +42,16 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
         ].join("&");
 
         console.log("Final Facebook OAuth URL:", url);
-      return url;
-    } catch (err) {
-      console.error("Unexpected error in generateOAuthUrl:", err);
-      return "";
+        
+        // This is the key fix: make sure we return a valid URL
+        if (!url || !url.includes('facebook.com')) {
+          throw new Error("Generated Facebook URL is invalid");
+        }
+        
+        return url;
+      } catch (err) {
+        console.error("Unexpected error in generateOAuthUrl for Facebook:", err);
+        throw err; // Re-throw to allow proper error handling
       }
     }
 
