@@ -16,20 +16,37 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
   
   switch (platform) {
     case "facebook": {
-      // grab JWT so Edge function can identify the user
-      const { data: { session } } = await supabase.auth.getSession();
-      const jwt  = session?.access_token || "";
-      const state = encodeURIComponent(JSON.stringify({ jwt }));
-      console.log("JWT (for state param):", jwt);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-      return [
-        "https://www.facebook.com/v22.0/dialog/oauth?",
-        `client_id=${FB_APP_ID}`,
-        `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
-        "scope=ads_read,ads_management",
-        "response_type=code",
-        `state=${state}`
-      ].join("&");
+        if (error) {
+        console.error("Failed to get Supabase session:", error);
+        return "";
+      }
+
+        if (!session) {
+        console.error("No session found");
+        return "";
+      }
+      
+        const jwt = session.access_token;
+        const state = encodeURIComponent(JSON.stringify({ jwt }));
+
+        const url = [
+          "https://www.facebook.com/v22.0/dialog/oauth?",
+          `client_id=${FB_APP_ID}`,
+          `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
+          "scope=ads_read,ads_management",
+          "response_type=code",
+          `state=${state}`
+        ].join("&");
+
+        console.log("Final Facebook OAuth URL:", url);
+      return url;
+    } catch (err) {
+      console.error("Unexpected error in generateOAuthUrl:", err);
+      return "";
+      }
     }
 
     case 'google':
