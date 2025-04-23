@@ -96,6 +96,15 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
                 connectingPlatform === platformItem.platform ||
                 disconnectingId === getConnection(platformItem.platform)?.id
               }
+              console.log("Rendering IntegrationItem with props:", {
+              name: platformItem.name,
+              status: getConnection(platformItem.platform) ? "connected" : "not-connected",
+              account: getConnection(platformItem.platform)?.account_name,
+              isLoading: (
+                connectingPlatform === platformItem.platform ||
+                disconnectingId === getConnection(platformItem.platform)?.id
+              )
+            });
             />
           ))}
         </div>
