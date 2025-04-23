@@ -63,10 +63,26 @@ const IntegrationsTab: React.FC = () => {
 
   const handleConnect = async (platform: Platform) => {
     if (!profile) {
-      toast.error("Authentication Required", { 
-        description: "You need to be logged in to connect platforms" 
+      console.warn("[handleConnect] Profile not loaded yet. Deferring connection.");
+  
+      // Show loading toast to inform user
+      toast.info("Loading...", {
+        description: "Please wait while we prepare your profile...",
       });
-      return;
+
+      // Wait and retry after 250ms (max 10 retries = 2.5s)
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+        const latestProfile = supabase.auth.getUser();
+        if (profile) break;
+      }
+
+      if (!profile) {
+        toast.error("Still loading", {
+          description: "We couldn’t load your profile. Try again in a moment.",
+        });
+        return;
+      }
     }
     
     try {
@@ -77,6 +93,7 @@ const IntegrationsTab: React.FC = () => {
       toast.info(`Connecting to ${platform}...`);
       
       await connectPlatform(platform);
+      toast.success(`Started connection for ${platform}`);
     } catch (error) {
       console.error(`Error connecting to ${platform}:`, error);
       toast.error("Connection Failed", {
