@@ -111,13 +111,17 @@ const connectPlatform = async (platform: Platform) => {
         description: `Please complete the ${platform} authentication to continue.`
       });
 
-      // Show immediately in a new tab for debug (optional)
-      // window.open(oauthUrl, "_blank");
-
-      // Wait 500ms then redirect in the same tab
+      // Delay for UX and toast visibility
       setTimeout(() => {
-        console.log(`[connectPlatform] Redirecting to ${oauthUrl}`);
-        window.location.href = oauthUrl;
+        if (oauthUrl && typeof oauthUrl === 'string') {
+          console.log(`[connectPlatform] Redirecting to ${oauthUrl}`);
+          window.location.href = oauthUrl;
+        } else {
+          console.error("❌ OAuth URL missing or invalid");
+          toast.error("OAuth URL Error", {
+            description: `Failed to redirect to ${platform} authentication.`
+          });
+        }
       }, 500);
 
     } catch (oauthErr) {
