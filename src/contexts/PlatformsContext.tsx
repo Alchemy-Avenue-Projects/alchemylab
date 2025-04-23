@@ -77,13 +77,15 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Check for valid session before proceeding
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       
-      if (!currentSession || !currentSession.access_token) {
-        console.error("No active session found");
+      if (!currentSession || !currentSession.user) {
+        console.error("No active Supabase session with user");
         toast.error("Authentication Required", { 
-          description: "You need to be logged in with an active session to connect platforms" 
+          description: "Please log in again." 
         });
         return;
       }
+
+      console.log("[connectPlatform] Valid session found for user:", currentSession.user.id);
       
       // For platforms that use API keys instead of OAuth
       if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
@@ -94,8 +96,9 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       // Generate the OAuth URL for this platform
       try {
+        console.log("[connectPlatform] Calling generateOAuthUrl");
         const oauthUrl = await generateOAuthUrl(platform);
-        console.log("[connectPlatform] OAuth URL:", oauthUrl);
+        console.log("[connectPlatform] Got OAuth URL:", oauthUrl);
         
         if (!oauthUrl) {
           throw new Error(`OAuth URL generation failed for ${platform}`);
