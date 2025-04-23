@@ -25,9 +25,14 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
   isLoading = false
 }) => {
   const handleConnect = () => {
+    console.log(`[IntegrationItem] Button clicked for ${name}`);
+    
     try {
       if (onConnect) {
+        console.log(`[IntegrationItem] Calling onConnect() for ${name}`);
         onConnect();
+      } else {
+      console.warn(`[IntegrationItem] onConnect is undefined for ${name}`);
       }
     } catch (error) {
       console.error(`Error connecting to ${name}:`, error);
