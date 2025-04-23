@@ -79,34 +79,34 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-4">
-          {platforms.map((platformItem) => (
-            <IntegrationItem
-              key={platformItem.platform}
-              name={platformItem.name}
-              status={getConnection(platformItem.platform) ? "connected" : "not-connected"}
-              account={getConnection(platformItem.platform)?.account_name}
-              icon={getPlatformIcon(platformItem.platform)}
-              onConnect={() => onConnect(platformItem.platform)}
-              onDisconnect={
-                getConnection(platformItem.platform)
-                  ? () => onDisconnect(getConnection(platformItem.platform)!.id)
-                  : undefined
-              }
-              isLoading={
-                connectingPlatform === platformItem.platform ||
-                disconnectingId === getConnection(platformItem.platform)?.id
-              }
-              console.log("Rendering IntegrationItem with props:", {
+          {platforms.map((platformItem) => {
+            const connection = getConnection(platformItem.platform);
+            const isLoading =
+              connectingPlatform === platformItem.platform ||
+              disconnectingId === connection?.id;
+
+            console.log("Rendering IntegrationItem with props:", {
               name: platformItem.name,
-              status: getConnection(platformItem.platform) ? "connected" : "not-connected",
-              account: getConnection(platformItem.platform)?.account_name,
-              isLoading: (
-                connectingPlatform === platformItem.platform ||
-                disconnectingId === getConnection(platformItem.platform)?.id
-              )
+              status: connection ? "connected" : "not-connected",
+              account: connection?.account_name,
+              isLoading
             });
-            />
-          ))}
+
+            return (
+              <IntegrationItem
+                key={platformItem.platform}
+                name={platformItem.name}
+                status={connection ? "connected" : "not-connected"}
+                account={connection?.account_name}
+                icon={getPlatformIcon(platformItem.platform)}
+                onConnect={() => onConnect(platformItem.platform)}
+                onDisconnect={
+                  connection ? () => onDisconnect(connection.id) : undefined
+                }
+                isLoading={isLoading}
+              />
+            );
+          })}
         </div>
       </CardContent>
     </Card>
