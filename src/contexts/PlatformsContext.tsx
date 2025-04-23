@@ -68,68 +68,74 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refreshConnections();
   }, [profile?.organization_id]);
 
-  const connectPlatform = async (platform: Platform) => {
-    console.log("[PlatformsContext] connectPlatform() called");
+const connectPlatform = async (platform: Platform) => {
+  console.log("[PlatformsContext] connectPlatform() called");
+
+  try {
+    console.log("[connectPlatform] Called for platform:", platform);
+    console.log(`Starting OAuth flow for ${platform}...`);
+
+    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      console.error("[connectPlatform] Supabase session error:", sessionError.message);
+    }
+
+    if (!currentSession || !currentSession.user || !currentSession.access_token) {
+      console.error("❌ No valid Supabase session or missing user/access_token");
+      toast.error("Authentication Required", {
+        description: "You need to be logged in to connect platforms"
+      });
+      return;
+    }
+
+    console.log("✅ Valid Supabase session found for user:", currentSession.user.id);
+
+    // Skip OAuth for API key platforms
+    if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
+      window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
+      return;
+    }
+
     try {
-      console.log("[connectPlatform] Called for platform:", platform);
-      console.log(`Starting OAuth flow for ${platform}...`);
-      
-      // Check for valid session before proceeding
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (!currentSession || !currentSession.user) {
-        console.error("No active Supabase session with user");
-        toast.error("Authentication Required", { 
-          description: "Please log in again." 
-        });
-        return;
+      console.log("[connectPlatform] Calling generateOAuthUrl...");
+      const oauthUrl = await generateOAuthUrl(platform);
+
+      console.log("[connectPlatform] Received OAuth URL:", oauthUrl);
+
+      if (!oauthUrl || !oauthUrl.includes('http')) {
+        throw new Error("Invalid or empty OAuth URL");
       }
 
-      console.log("[connectPlatform] Valid session found for user:", currentSession.user.id);
-      
-      // For platforms that use API keys instead of OAuth
-      if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
-        // Redirect to the settings page with a query param to show the API key form
-        window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
-        return;
-      }
-      
-      // Generate the OAuth URL for this platform
-      try {
-        console.log("[connectPlatform] Calling generateOAuthUrl");
-        const oauthUrl = await generateOAuthUrl(platform);
-        console.log("[connectPlatform] Got OAuth URL:", oauthUrl);
-        
-        if (!oauthUrl) {
-          throw new Error(`OAuth URL generation failed for ${platform}`);
-        }
-        
-        console.log(`Opening OAuth URL for ${platform}: ${oauthUrl}`);
-        
-        // Show a toast before redirecting
-        toast.info("Redirecting to authentication page", {
-          description: `Please complete the ${platform} authentication to continue.`
-        });
-        
-        // Add a small delay before redirecting to ensure toast is shown
-        setTimeout(() => {
-          // Redirect to the OAuth URL
-          window.location.href = oauthUrl;
-        }, 500);
-      } catch (error) {
-        console.error(`Error generating OAuth URL for ${platform}:`, error);
-        throw new Error(`Failed to generate OAuth URL: ${error.message}`);
-      }
-      
-    } catch (err) {
-      console.error(`Error connecting to ${platform}:`, err);
-      setError(`Failed to connect to ${platform}: ${err.message}`);
-      toast.error(`Connection Error`, {
-        description: `Failed to connect to ${platform}: ${err.message}`
+      toast.info("Redirecting to authentication page", {
+        description: `Please complete the ${platform} authentication to continue.`
+      });
+
+      // Show immediately in a new tab for debug (optional)
+      // window.open(oauthUrl, "_blank");
+
+      // Wait 500ms then redirect in the same tab
+      setTimeout(() => {
+        console.log(`[connectPlatform] Redirecting to ${oauthUrl}`);
+        window.location.href = oauthUrl;
+      }, 500);
+
+    } catch (oauthErr) {
+      console.error(`❌ Error generating OAuth URL for ${platform}:`, oauthErr);
+      toast.error("OAuth URL Error", {
+        description: `Failed to start ${platform} authentication.`
       });
     }
-  };
 
+  } catch (err: any) {
+    console.error(`❌ General error during connectPlatform(${platform}):`, err);
+    setError(`Failed to connect to ${platform}: ${err.message}`);
+    toast.error("Connection Error", {
+      description: `Failed to connect to ${platform}: ${err.message}`
+    });
+  }
+};
+  
   const disconnectPlatform = async (connectionId: string) => {
     if (!profile?.organization_id) return;
 
