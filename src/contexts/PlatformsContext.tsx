@@ -177,6 +177,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 export const usePlatforms = () => {
   const context = useContext(PlatformsContext);
   if (context === undefined) {
+    console.error("❌ usePlatforms was used outside of PlatformsProvider");
     throw new Error('usePlatforms must be used within a PlatformsProvider');
   }
   return context;
