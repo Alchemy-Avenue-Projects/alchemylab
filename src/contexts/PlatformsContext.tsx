@@ -6,6 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { generateOAuthUrl } from '@/services/platforms/oauth';
 import { toast } from 'sonner';
+if (!import.meta.env.VITE_FACEBOOK_APP_ID) {
+  console.warn("⚠️ Missing VITE_FACEBOOK_APP_ID in .env — Facebook OAuth may not work.");
+}
 
 interface PlatformsContextType {
   connections: PlatformConnection[];
