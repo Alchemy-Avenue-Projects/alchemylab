@@ -62,7 +62,7 @@ const IntegrationsTab: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   const handleConnect = async (platform: Platform) => {
-    if (!profile) {
+/*    if (!profile) {
       console.warn("[handleConnect] Profile not loaded yet. Deferring connection.");
   
       // Show loading toast to inform user
@@ -84,7 +84,7 @@ const IntegrationsTab: React.FC = () => {
         return;
       }
     }
-    
+ */   
     try {
       console.log(`Connecting to ${platform}...`);
       setConnectingPlatform(platform);
