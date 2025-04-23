@@ -1,4 +1,3 @@
-
 import { Platform } from '@/types/platforms';
 import { OAUTH_CONFIG, getRedirectUri } from './config';
 const FB_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
@@ -17,42 +16,40 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
   switch (platform) {
     case "facebook": {
       try {
-        // Force a fresh session check
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (error) {
-          console.error("Failed to get Supabase session:", error);
+        if (sessionError) {
+          console.error("Failed to get Supabase session:", sessionError);
           throw new Error("Authentication required. Please sign in again.");
         }
 
-        if (!data.session || !data.session.access_token) {
+        if (!session || !session.access_token) {
           console.error("No valid session found");
           throw new Error("No active session. Please sign in again.");
         }
       
-        const jwt = session?.access_token || '';
+        const jwt = session.access_token;
         const state = encodeURIComponent(JSON.stringify({ jwt }));
 
-        return [
-        'https://www.facebook.com/v22.0/dialog/oauth?',
-        `client_id=${FB_APP_ID}`,
-        `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
-        'scope=ads_read,ads_management',
-        'response_type=code',
-        `state=${state}`
-      ].join('&');
+        const oauthURL = [
+          'https://www.facebook.com/v22.0/dialog/oauth?',
+          `client_id=${FB_APP_ID}`,
+          `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
+          'scope=ads_read,ads_management',
+          'response_type=code',
+          `state=${state}`
+        ].join('&');
 
-        console.log("Final Facebook OAuth URL:", url);
+        console.log("Final Facebook OAuth URL:", oauthURL);
         
-        // This is the key fix: make sure we return a valid URL
-        if (!url || !url.includes('facebook.com')) {
+        if (!oauthURL || !oauthURL.includes('facebook.com')) {
           throw new Error("Generated Facebook URL is invalid");
         }
         
-        return url;
+        return oauthURL;
       } catch (err) {
         console.error("Unexpected error in generateOAuthUrl for Facebook:", err);
-        throw err; // Re-throw to allow proper error handling
+        throw err;
       }
     }
 
