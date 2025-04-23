@@ -69,6 +69,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [profile?.organization_id]);
 
   const connectPlatform = async (platform: Platform) => {
+    console.log("[PlatformsContext] connectPlatform() called");
     try {
       console.log("[connectPlatform] Called for platform:", platform);
       console.log(`Starting OAuth flow for ${platform}...`);
