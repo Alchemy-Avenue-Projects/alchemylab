@@ -45,7 +45,7 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
         if (!oauthURL || !oauthURL.includes('facebook.com')) {
           throw new Error("Generated Facebook URL is invalid");
         }
-        
+        console.log("✅ Facebook OAuth URL generated:", oauthURL);
         return oauthURL;
       } catch (err) {
         console.error("Unexpected error in generateOAuthUrl for Facebook:", err);
