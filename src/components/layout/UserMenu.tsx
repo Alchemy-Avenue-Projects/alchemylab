@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,10 @@ const UserMenu: React.FC = () => {
       setIsLoggingOut(true);
       console.log("Signing out...");
       
-      // Call the Supabase auth signOut method directly
+      // Clear any stored tokens or state first
+      localStorage.removeItem(`sb-${import.meta.env.VITE_SUPABASE_URL.split('.')[0]}-auth-token`);
+      
+      // Call the Supabase auth signOut method
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -54,13 +56,12 @@ const UserMenu: React.FC = () => {
       
       // Navigate to auth page after a short delay
       setTimeout(() => {
-        navigate("/auth");
-      }, 1000); // Increased delay to ensure session is fully cleared
+        window.location.href = "/auth"; // Use window.location for a full page refresh
+      }, 1000);
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");
     } finally {
-      // Ensure loading state is reset even on error
       setIsLoggingOut(false);
     }
   };
