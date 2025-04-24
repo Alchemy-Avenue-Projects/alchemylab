@@ -141,15 +141,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      console.log("Starting sign out process...");
+      
       // Clear any platform connections from localStorage
-      localStorage.removeItem(`sb-${env.supabase.url.split('.')[0]}-auth-token`);
+      const supabaseUrl = env.supabase.url;
+      const storageKey = `sb-${supabaseUrl.split('.')[0]}-auth-token`;
+      console.log("Clearing localStorage key:", storageKey);
+      localStorage.removeItem(storageKey);
       
       // Sign out from Supabase
+      console.log("Calling Supabase signOut...");
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error("Supabase signOut error:", error);
         throw error;
       }
+      
+      console.log("Supabase signOut successful");
       
       // Clear local state
       setUser(null);
@@ -159,7 +168,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Show success message
       toast.success("Signed out successfully");
       
+      // Add a small delay to ensure state is cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Redirect to home page
+      console.log("Redirecting to home page...");
       window.location.href = '/';
     } catch (error) {
       console.error("Sign out error:", error);

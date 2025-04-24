@@ -1,41 +1,49 @@
-  import { Platform } from '@/types/platforms';
+import { Platform } from '@/types/platforms';
 import { OAUTH_CONFIG, getRedirectUri } from './config';
-const FB_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
-const FN_BASE   = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
-import { supabase } from '@/integrations/supabase/client';
+import { env } from '@/utils/env';
 
 /**
  * Generate OAuth URL for various platforms
  */
 export const generateOAuthUrl = async (platform: Platform, jwt: string): Promise<string> => {
-  const redirectUri = getRedirectUri(platform);
+  console.log(`[generateOAuthUrl] Generating URL for ${platform}`);
   
-  console.log(`Generated ${platform} redirect URI: ${redirectUri}`);
+  const redirectUri = getRedirectUri(platform);
+  console.log(`[generateOAuthUrl] Redirect URI: ${redirectUri}`);
   
   switch (platform) {
     case "facebook": {
       try {
-        const state = encodeURIComponent(JSON.stringify({ jwt }));
+        console.log(`[generateOAuthUrl] Using Facebook App ID: ${env.facebook.appId}`);
+        
+        if (!env.facebook.appId) {
+          throw new Error("Facebook App ID is not configured");
+        }
+
+        const state = encodeURIComponent(JSON.stringify({ 
+          jwt,
+          timestamp: Date.now(),
+          nonce: Math.random().toString(36).substring(2)
+        }));
 
         const oauthURL = [
           'https://www.facebook.com/v22.0/dialog/oauth?',
-          `client_id=${FB_APP_ID}`,
-          `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
-          'scope=ads_read,ads_management',
+          `client_id=${env.facebook.appId}`,
+          `redirect_uri=${encodeURIComponent(redirectUri)}`,
+          'scope=ads_read,ads_management,business_management',
           'response_type=code',
           `state=${state}`
         ].join('&');
 
-        console.log("Final Facebook OAuth URL:", oauthURL);
+        console.log("[generateOAuthUrl] Final Facebook OAuth URL:", oauthURL);
     
         if (!oauthURL || !oauthURL.includes('facebook.com')) {
           throw new Error("Generated Facebook URL is invalid");
         }
 
-        console.log("✅ Facebook OAuth URL generated:", oauthURL);
         return oauthURL;
       } catch (err) {
-        console.error("Unexpected error in generateOAuthUrl for Facebook:", err);
+        console.error("[generateOAuthUrl] Error generating Facebook URL:", err);
         throw err;
       }
     }
