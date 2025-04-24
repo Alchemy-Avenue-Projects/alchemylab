@@ -3,7 +3,7 @@ export const validateEnv = () => {
   const requiredVars = [
     'VITE_FACEBOOK_APP_ID',
     'VITE_SUPABASE_URL',
-    'VITE_SUPABASE_PUBLISHABLE_KEY'
+    'VITE_SUPABASE_ANON_KEY'
   ];
 
   const missingVars = requiredVars.filter(varName => !import.meta.env[varName]);
@@ -24,6 +24,6 @@ export const env = {
   },
   supabase: {
     url: import.meta.env.VITE_SUPABASE_URL as string,
-    publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+    publishableKey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
   },
 } as const; 
