@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { User, Save } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProfileTab: React.FC = () => {
   const { user, profile } = useAuth();
@@ -35,11 +35,35 @@ const ProfileTab: React.FC = () => {
     }));
   };
 
-  const handleSaveChanges = () => {
-    toast({
-      title: "Changes saved",
-      description: "Your profile information has been updated."
-    });
+  const handleSaveChanges = async () => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: formState.name,
+          company: formState.company,
+          job_title: formState.role,
+          bio: formState.bio
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      // Refresh the profile data in the AuthContext
+      await supabase.auth.refreshSession();
+
+      toast({
+        title: "Changes saved",
+        description: "Your profile information has been updated."
+      });
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      toast({
+        title: "Error",
+        description: "Failed to save profile changes. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

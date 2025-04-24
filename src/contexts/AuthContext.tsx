@@ -30,22 +30,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // First try to fetch existing profile
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error("Error fetching profile:", error);
-        toast.error("Failed to load user profile");
-        return null;
+        throw error;
+      }
+      
+      // If no profile exists, create one
+      if (!data) {
+        console.log("No profile found, creating new profile for user:", userId);
+        const { data: userData } = await supabase.auth.getUser();
+        const userMetadata = userData?.user?.user_metadata;
+        
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: userId,
+            full_name: userMetadata?.full_name || '',
+            role: 'user', // Default role
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          throw insertError;
+        }
+        
+        data = newProfile;
       }
       
       return data as Profile;
     } catch (error) {
-      console.error("Error in profile fetch:", error);
-      toast.error("Failed to load user profile");
+      console.error("Error in profile fetch/create:", error);
+      toast.error("Failed to load or create user profile");
       return null;
     }
   };
