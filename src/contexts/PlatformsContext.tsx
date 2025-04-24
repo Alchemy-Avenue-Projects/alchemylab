@@ -100,40 +100,35 @@ const connectPlatform = async (platform: Platform) => {
       return;
     }
 
-    try {
-      console.log("[connectPlatform] Calling generateOAuthUrl...");
-      const jwt = currentSession.access_token;
-      const oauthUrl = await generateOAuthUrl(platform, jwt);
+    if (platform === 'facebook') {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
-      console.log("[connectPlatform] Received OAuth URL:", oauthUrl);
-
-      if (!oauthUrl || !oauthUrl.includes('http')) {
-        throw new Error("Invalid or empty OAuth URL");
+      if (error) {
+        console.error("❌ Error initiating Facebook OAuth:", error.message);
+        toast.error("OAuth Error", {
+          description: `Failed to initiate ${platform} authentication.`
+        });
+        return;
       }
 
-      toast.info("Redirecting to authentication page", {
-        description: `Please complete the ${platform} authentication to continue.`
-      });
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("❌ No redirect URL returned from signInWithOAuth");
+        toast.error("OAuth Error", {
+          description: `No redirect URL returned for ${platform} authentication.`
+        });
+      }
 
-      // Delay for UX and toast visibility
-      setTimeout(() => {
-        if (oauthUrl && typeof oauthUrl === 'string') {
-          console.log(`[connectPlatform] Redirecting to ${oauthUrl}`);
-          window.location.href = oauthUrl;
-        } else {
-          console.error("❌ OAuth URL missing or invalid");
-          toast.error("OAuth URL Error", {
-            description: `Failed to redirect to ${platform} authentication.`
-          });
-        }
-      }, 500);
-
-    } catch (oauthErr) {
-      console.error(`❌ Error generating OAuth URL for ${platform}:`, oauthErr);
-      toast.error("OAuth URL Error", {
-        description: `Failed to start ${platform} authentication.`
-      });
+      return;
     }
+
+    // Handle other platforms as needed
 
   } catch (err: any) {
     console.error(`❌ General error during connectPlatform(${platform}):`, err);
