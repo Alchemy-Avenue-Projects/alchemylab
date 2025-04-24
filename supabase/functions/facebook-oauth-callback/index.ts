@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://alchemylab.app',
+  'Access-Control-Allow-Origin': '*', // Temporarily allow all origins for debugging
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
@@ -70,15 +70,20 @@ const exchangeCodeForToken = async (code: string) => {
 
 const handleRequest = async (req: Request) => {
   try {
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return handlePreflight();
+    }
+
     const url = new URL(req.url);
     const code = url.searchParams.get('code') ?? '';
     const error = url.searchParams.get('error') ?? '';
-    const state = url.searchParams.get('state') ?? '{}';
+    const state = url.searchParams.get('state') ?? '';
     
     logInfo("Received OAuth callback", { 
       code: code ? `${code.substring(0, 5)}...` : null,
       error,
-      state
+      state: state ? `${state.substring(0, 20)}...` : null
     });
     
     if (error) {
@@ -103,32 +108,41 @@ const handleRequest = async (req: Request) => {
       );
     }
     
-    // Parse the state parameter to get user information
-    let userId: string | null = null;
-    let accessToken: string | null = null;
-    let timestamp: number | null = null;
-    let nonce: string | null = null;
-    
+    // Parse the state parameter
+    let stateData;
     try {
-      const stateData = JSON.parse(atob(state));
-      userId = stateData.userId;
-      accessToken = stateData.accessToken;
-      timestamp = stateData.timestamp;
-      nonce = stateData.nonce;
-
-      // Validate timestamp (prevent replay attacks)
-      if (!timestamp || Date.now() - timestamp > 5 * 60 * 1000) { // 5 minutes
-        throw new Error("State parameter expired");
-      }
-
-      // Validate nonce
-      if (!nonce) {
-        throw new Error("Invalid state parameter: missing nonce");
-      }
+      const decodedState = decodeURIComponent(state).replace(/#.*$/, ''); // Remove Facebook's #_=_ suffix
+      stateData = JSON.parse(atob(decodedState));
+      logInfo("Parsed state data", stateData);
     } catch (err) {
       logError("Error parsing state parameter", err);
       return new Response(
-        JSON.stringify({ error: "Invalid state parameter" }),
+        JSON.stringify({ error: "Invalid state parameter format" }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    // Validate state data
+    if (!stateData.accessToken || !stateData.timestamp || !stateData.nonce) {
+      logError("Missing required state parameters", stateData);
+      return new Response(
+        JSON.stringify({ error: "Invalid state parameter: missing required fields" }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    // Validate timestamp (5 minute window)
+    const now = Date.now();
+    if (now - stateData.timestamp > 5 * 60 * 1000) {
+      logError("State parameter expired", { now, timestamp: stateData.timestamp });
+      return new Response(
+        JSON.stringify({ error: "State parameter expired" }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -138,28 +152,28 @@ const handleRequest = async (req: Request) => {
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     
-    // Verify the user's session
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    // Get user from the access token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(stateData.accessToken);
     
-    if (authError || !user || user.id !== userId) {
-      logError("Invalid user session", { authError, userId, user });
-        return new Response(
-        JSON.stringify({ error: "Invalid user session" }),
-          { 
-            status: 401, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      
+    if (authError || !user) {
+      logError("Invalid user session", { authError });
+      return new Response(
+        JSON.stringify({ error: "Invalid user session", details: authError?.message }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     try {
       // Exchange the code for a token
       const tokenData = await exchangeCodeForToken(code);
-        
+      
       // Store the connection
-      const { data: connection, error: storeError } = await supabase
-          .from('platform_connections')
-          .insert({
+      const { error: storeError } = await supabase
+        .from('platform_connections')
+        .upsert({
           platform: 'facebook',
           organization_id: user.id,
           auth_token: tokenData.accessToken,
@@ -167,40 +181,40 @@ const handleRequest = async (req: Request) => {
           connected_by: user.id,
           connected: true,
           updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+        }, {
+          onConflict: 'platform,organization_id'
+        });
 
       if (storeError) {
         logError("Error storing connection", storeError);
         throw storeError;
       }
       
-      // Redirect to the success page
+      // Redirect to success page
       return new Response(
         null,
         { 
           status: 302,
           headers: { 
             ...corsHeaders,
-            'Location': 'https://alchemylab.app/app/settings?success=facebook_connected'
+            'Location': 'https://alchemylab.app/app/settings?tab=integrations&success=facebook_connected'
           }
         }
       );
     } catch (err) {
       logError("Error processing connection", err);
-    return new Response(
+      return new Response(
         JSON.stringify({ error: err.message }),
-      { 
+        { 
           status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
   } catch (err) {
     logError("Unhandled error in OAuth callback", err);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", details: err.message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -209,9 +223,4 @@ const handleRequest = async (req: Request) => {
   }
 };
 
-serve((req) => {
-  if (req.method === 'OPTIONS') {
-    return handlePreflight();
-  }
-  return handleRequest(req);
-});
+serve(handleRequest);

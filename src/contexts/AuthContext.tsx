@@ -143,14 +143,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("[AuthContext] Starting sign out process...");
       
-      // Clear any stored tokens
-      const supabaseUrl = env.supabase.url;
-      const storageKey = `sb-${supabaseUrl.split('.')[0]}-auth-token`;
-      console.log("[AuthContext] Clearing localStorage key:", storageKey);
-      localStorage.removeItem(storageKey);
-      
-      // Clear any other app-specific storage
+      // Clear all storage first
+      localStorage.clear();
       sessionStorage.clear();
+      
+      // Clear local state before calling Supabase
+      setUser(null);
+      setSession(null);
+      setProfile(null);
       
       // Sign out from Supabase
       console.log("[AuthContext] Calling Supabase signOut...");
@@ -163,28 +163,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("[AuthContext] Supabase signOut successful");
       
-      // Clear local state
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      
       // Show success message
       toast.success("Signed out successfully");
       
-      // Force clear any remaining auth state
-      await supabase.auth.refreshSession();
-      
-      // Add a small delay to ensure state is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Force a full page reload to clear any remaining state
-      window.location.href = '/auth?mode=login';
+      // Force a clean reload to the auth page
+      window.location.replace('/auth?mode=login');
     } catch (error) {
       console.error("[AuthContext] Sign out error:", error);
       toast.error("Failed to sign out");
       
       // Force reload as fallback
-      window.location.reload();
+      window.location.replace('/auth?mode=login');
     }
   };
 
