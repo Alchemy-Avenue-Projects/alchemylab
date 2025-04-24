@@ -102,7 +102,8 @@ const connectPlatform = async (platform: Platform) => {
 
     try {
       console.log("[connectPlatform] Calling generateOAuthUrl...");
-      const oauthUrl = await generateOAuthUrl(platform);
+      const jwt = currentSession.access_token;
+      const oauthUrl = await generateOAuthUrl(platform, jwt);
 
       console.log("[connectPlatform] Received OAuth URL:", oauthUrl);
 
