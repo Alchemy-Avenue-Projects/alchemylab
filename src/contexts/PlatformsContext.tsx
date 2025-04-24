@@ -4,12 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
+import { env, validateEnv } from '@/utils/env';
 
-// Validate environment variables
-const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
-if (!FACEBOOK_APP_ID) {
-  console.error("❌ Missing VITE_FACEBOOK_APP_ID in .env — Facebook OAuth will not work.");
-}
+// Validate environment variables on startup
+validateEnv();
 
 interface PlatformsContextType {
   connections: PlatformConnection[];
@@ -103,7 +101,9 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (platform === 'facebook') {
-        if (!FACEBOOK_APP_ID) {
+        console.log("🔍 Checking Facebook App ID:", env.facebook.appId);
+        
+        if (!env.facebook.appId) {
           console.error("❌ Missing Facebook App ID");
           toast.error("Configuration Error", {
             description: "Facebook App ID is not configured"
@@ -122,13 +122,24 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }));
 
         const facebookAuthUrl = new URL('https://www.facebook.com/v22.0/dialog/oauth');
-        facebookAuthUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
+        facebookAuthUrl.searchParams.append('client_id', env.facebook.appId);
         facebookAuthUrl.searchParams.append('redirect_uri', redirectUri);
         facebookAuthUrl.searchParams.append('scope', scopes);
         facebookAuthUrl.searchParams.append('state', state);
         facebookAuthUrl.searchParams.append('response_type', 'code');
 
+        console.log("🔍 Facebook OAuth URL:", {
+          clientId: env.facebook.appId,
+          redirectUri,
+          scopes,
+          state: state.substring(0, 10) + '...'
+        });
+
         console.log("✅ Redirecting to Facebook OAuth URL:", facebookAuthUrl.toString());
+        
+        // Add a small delay to ensure logs are visible
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         window.location.href = facebookAuthUrl.toString();
         return;
       }
