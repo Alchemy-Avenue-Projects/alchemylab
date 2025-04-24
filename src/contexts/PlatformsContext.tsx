@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Platform, PlatformConnection } from '@/types/platforms';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,30 +100,32 @@ const connectPlatform = async (platform: Platform) => {
     }
 
     if (platform === 'facebook') {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        console.error("❌ Error initiating Facebook OAuth:", error.message);
-        toast.error("OAuth Error", {
-          description: `Failed to initiate ${platform} authentication.`
+      const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
+      if (!facebookAppId) {
+        console.error("❌ Missing Facebook App ID");
+        toast.error("Configuration Error", {
+          description: "Facebook App ID is not configured"
         });
         return;
       }
 
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        console.error("❌ No redirect URL returned from signInWithOAuth");
-        toast.error("OAuth Error", {
-          description: `No redirect URL returned for ${platform} authentication.`
-        });
-      }
+      // Construct the Facebook OAuth URL manually
+      const redirectUri = 'https://api.alchemylab.app/facebook-oauth-callback';
+      const scopes = 'ads_management,ads_read,business_management';
+      const state = btoa(JSON.stringify({ 
+        userId: currentSession.user.id,
+        accessToken: currentSession.access_token
+      }));
 
+      const facebookAuthUrl = new URL('https://www.facebook.com/v22.0/dialog/oauth');
+      facebookAuthUrl.searchParams.append('client_id', facebookAppId);
+      facebookAuthUrl.searchParams.append('redirect_uri', redirectUri);
+      facebookAuthUrl.searchParams.append('scope', scopes);
+      facebookAuthUrl.searchParams.append('state', state);
+      facebookAuthUrl.searchParams.append('response_type', 'code');
+
+      console.log("✅ Redirecting to Facebook OAuth URL:", facebookAuthUrl.toString());
+      window.location.href = facebookAuthUrl.toString();
       return;
     }
 

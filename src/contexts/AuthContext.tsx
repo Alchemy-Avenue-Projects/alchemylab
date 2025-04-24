@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/types/database";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -27,14 +27,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Failed to load user profile");
+        return null;
+      }
+      
+      return data as Profile;
+    } catch (error) {
+      console.error("Error in profile fetch:", error);
+      toast.error("Failed to load user profile");
+      return null;
+    }
+  };
+
   useEffect(() => {
     // Add a timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       console.log("Auth loading timeout reached, forcing loading state to false");
       setIsLoading(false);
-    }, 5000); // Set a reasonable timeout
+    }, 10000); // Increased timeout to 10 seconds
 
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
@@ -43,19 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Fetch user profile if authenticated
         if (session?.user) {
-          try {
-            const { data } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-              
-            setProfile(data as Profile);
-          } catch (error) {
-            console.error("Error fetching profile:", error);
-            // Still set loading to false even if profile fetch fails
-            setProfile(null);
-          }
+          const userProfile = await fetchProfile(session.user.id);
+          setProfile(userProfile);
         } else {
           setProfile(null);
         }
@@ -65,34 +76,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log("Initial session check:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (error) {
-              console.error("Error fetching profile:", error);
-              setProfile(null);
-            } else {
-              setProfile(data as Profile);
-            }
-            setIsLoading(false);
-            clearTimeout(loadingTimeout);
-          });
+        fetchProfile(session.user.id).then(profile => {
+          setProfile(profile);
+          setIsLoading(false);
+          clearTimeout(loadingTimeout);
+        });
       } else {
         setIsLoading(false);
         clearTimeout(loadingTimeout);
       }
     }).catch(error => {
       console.error("Session fetch error:", error);
+      toast.error("Failed to load session");
       setIsLoading(false);
       clearTimeout(loadingTimeout);
     });
@@ -104,28 +106,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      console.error("Sign in error:", error);
+      toast.error("Failed to sign in");
+      return { error: error as Error };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
-    return { error };
+      });
+      return { error };
+    } catch (error) {
+      console.error("Sign up error:", error);
+      toast.error("Failed to sign up");
+      return { error: error as Error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+      toast.success("Signed out successfully");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("Failed to sign out");
+    }
   };
 
   // Check if the profile has role property and it equals "admin"

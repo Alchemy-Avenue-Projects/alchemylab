@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
@@ -11,6 +10,7 @@ const FACEBOOK_APP_ID = Deno.env.get("FACEBOOK_APP_ID") || "";
 const FACEBOOK_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const REDIRECT_URI = Deno.env.get("FACEBOOK_REDIRECT_URI") || "https://api.alchemylab.app/facebook-oauth-callback";
 
 const logInfo = (message: string, data?: any) => {
   if (data) {
@@ -40,7 +40,7 @@ const storeAuthorizationCode = async (supabase: any, code: string, user: any, or
       organization_id: organizationId,
       auth_code: code,
       connected_by: user.id,
-      connected: false  // Not fully connected yet
+      connected: false
     })
     .select()
     .single();
@@ -53,17 +53,17 @@ const storeAuthorizationCode = async (supabase: any, code: string, user: any, or
   return data;
 };
 
-const exchangeCodeForToken = async (code: string, redirectUri: string) => {
+const exchangeCodeForToken = async (code: string) => {
   if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
     throw new Error("Missing Facebook app credentials");
   }
 
-  logInfo(`Exchanging code for token with redirect URI: ${redirectUri}`);
+  logInfo(`Exchanging code for token with redirect URI: ${REDIRECT_URI}`);
 
   const tokenUrl = new URL("https://graph.facebook.com/v22.0/oauth/access_token");
   tokenUrl.searchParams.append("client_id", FACEBOOK_APP_ID);
   tokenUrl.searchParams.append("client_secret", FACEBOOK_APP_SECRET);
-  tokenUrl.searchParams.append("redirect_uri", redirectUri);
+  tokenUrl.searchParams.append("redirect_uri", REDIRECT_URI);
   tokenUrl.searchParams.append("code", code);
 
   const response = await fetch(tokenUrl.toString());
@@ -94,11 +94,6 @@ const handleRequest = async (req: Request) => {
     const error = url.searchParams.get('error') ?? '';
     const state = url.searchParams.get('state') ?? '{}';
 
-    const parsedState = JSON.parse(state);
-    const jwt = parsedState.jwt ?? '';
-    const token = req.headers.get('Authorization')?.replace('Bearer ', '') || jwt;
-
-    
     logInfo("Received OAuth callback", { 
       code: code ? `${code.substring(0, 5)}...` : null,
       error,
@@ -126,246 +121,91 @@ const handleRequest = async (req: Request) => {
         }
       );
     }
+
+    // Parse the state parameter to get user information
+    let userId: string | null = null;
+    let accessToken: string | null = null;
     
-    // Get the auth token from the request headers
-    const authHeader = req.headers.get('Authorization') || '';
-    const token = authHeader.replace('Bearer ', '');
-    
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    
-    // Get user from auth token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    // Log more debugging information
-    logInfo("Auth token status:", { 
-      tokenPresent: !!token, 
-      tokenLength: token?.length || 0,
-      userFound: !!user,
-      authError: authError?.message
-    });
-    
-    // If we can't get the user from the token, we'll try to find the connection by auth_code
-    if (authError || !user) {
-      logInfo("Could not authenticate user from token, looking for existing connection with auth_code");
-      
-      const { data: existingConnection, error: connectionError } = await supabase
-        .from('platform_connections')
-        .select('*')
-        .eq('auth_code', code)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (connectionError || !existingConnection) {
-        logError("Could not find an existing connection with this auth code", connectionError);
-        return new Response(
-          JSON.stringify({ error: "Authentication required and no existing connection found" }),
-          { 
-            status: 401, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      
-      // IMPORTANT: Use the real app domain that is registered in Facebook Developer Console
-      const redirectUri = `https://api.alchemylab.app/facebook-oauth-callback`;
-      
-      try {
-        // Try to exchange the code for a token
-        const tokenData = await exchangeCodeForToken(code, redirectUri);
-        
-        // Update the connection with the token details
-        const { error: updateError } = await supabase
-          .from('platform_connections')
-          .update({
-            auth_token: tokenData.accessToken,
-            token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
-            connected: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingConnection.id);
-        
-        if (updateError) {
-          logError("Error updating connection with token", updateError);
-          throw updateError;
-        }
-        
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: "Facebook connection successful",
-            connectionId: existingConnection.id
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      } catch (tokenError) {
-        logError("Error exchanging code for token", tokenError);
-        throw tokenError;
-      }
-    }
-    
-    // Get user's organization
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
-    
-    if (profileError || !userProfile?.organization_id) {
-      logError("Profile error or missing organization", profileError);
-      // Use user.id as organization_id if no organization is found
-      const organizationId = user.id;
-      logInfo("Using user.id as organization_id fallback", { userId: user.id });
-      
-      // Continue with the user.id as organization_id
-      
-      // Look for an existing connection with this auth_code
-      const { data: existingConnection, error: findError } = await supabase
-        .from('platform_connections')
-        .select('*')
-        .eq('auth_code', code)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      // If we found a connection, update it rather than creating a new one
-      let connectionId = '';
-      
-      if (!findError && existingConnection) {
-        connectionId = existingConnection.id;
-      } else {
-        // No existing connection found, create a new one
-        const { data: newConnection, error: createError } = await supabase
-          .from('platform_connections')
-          .insert({
-            platform: state || 'facebook',
-            organization_id: organizationId,
-            auth_code: code,
-            connected_by: user.id,
-            connected: false  // Not fully connected yet
-          })
-          .select()
-          .single();
-        
-        if (createError) {
-          logError("Error creating connection", createError);
-          throw createError;
-        }
-        
-        connectionId = newConnection.id;
-      }
-      
-      // IMPORTANT: Use the real app domain that is registered in Facebook Developer Console
-      const redirectUri = `https://api.alchemylab.app/facebook-oauth-callback`;
-      
-      // Try to exchange the code for a token
-      const tokenData = await exchangeCodeForToken(code, redirectUri);
-      
-      // Update the connection with the token details
-      const { error: updateError } = await supabase
-        .from('platform_connections')
-        .update({
-          auth_token: tokenData.accessToken,
-          token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
-          connected: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', connectionId);
-      
-      if (updateError) {
-        logError("Error updating connection with token", updateError);
-        throw updateError;
-      }
-      
+    try {
+      const stateData = JSON.parse(atob(state));
+      userId = stateData.userId;
+      accessToken = stateData.accessToken;
+    } catch (err) {
+      logError("Error parsing state parameter", err);
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Facebook connection successful",
-          connectionId: connectionId
-        }),
+        JSON.stringify({ error: "Invalid state parameter" }),
         { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
     
-    // Look for an existing connection with this auth_code
-    const { data: existingConnection, error: findError } = await supabase
-      .from('platform_connections')
-      .select('*')
-      .eq('auth_code', code)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     
-    // If we found a connection, update it rather than creating a new one
-    let connectionId = '';
+    // Verify the user's session
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
-    if (!findError && existingConnection) {
-      connectionId = existingConnection.id;
-    } else {
-      // Store the authorization code in the database
-      const { data: newConnection, error: storeError } = await supabase
+    if (authError || !user || user.id !== userId) {
+      logError("Invalid user session", { authError, userId, user });
+      return new Response(
+        JSON.stringify({ error: "Invalid user session" }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    try {
+      // Exchange the code for a token
+      const tokenData = await exchangeCodeForToken(code);
+      
+      // Store the connection
+      const { data: connection, error: storeError } = await supabase
         .from('platform_connections')
         .insert({
-          platform: state || 'facebook',
-          organization_id: userProfile.organization_id,
-          auth_code: code,
+          platform: 'facebook',
+          organization_id: user.id,
+          auth_token: tokenData.accessToken,
+          token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
           connected_by: user.id,
-          connected: false  // Not fully connected yet
+          connected: true,
+          updated_at: new Date().toISOString()
         })
         .select()
         .single();
-
+      
       if (storeError) {
-        logError('Error storing authorization code', storeError);
+        logError("Error storing connection", storeError);
         throw storeError;
       }
       
-      connectionId = newConnection.id;
+      // Redirect to the success page
+      return new Response(
+        null,
+        { 
+          status: 302,
+          headers: { 
+            ...corsHeaders,
+            'Location': `${window.location.origin}/app/settings?success=facebook_connected`
+          }
+        }
+      );
+    } catch (err) {
+      logError("Error processing connection", err);
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
-    
-    // IMPORTANT: Use the real app domain that is registered in Facebook Developer Console
-    const redirectUri = `https://api.alchemylab.app/facebook-oauth-callback`;
-    
-    // Try to exchange the code for a token
-    const tokenData = await exchangeCodeForToken(code, redirectUri);
-    
-    // Update the connection with the token details
-    const { error: updateError } = await supabase
-      .from('platform_connections')
-      .update({
-        auth_token: tokenData.accessToken,
-        token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
-        connected: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', connectionId);
-    
-    if (updateError) {
-      logError("Error updating connection with token", updateError);
-      throw updateError;
-    }
-    
+  } catch (err) {
+    logError("Unhandled error in OAuth callback", err);
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Facebook connection successful",
-        connectionId: connectionId
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  } catch (error) {
-    logError('Facebook OAuth callback error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Unknown error" }),
+      JSON.stringify({ error: "Internal server error" }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -374,10 +214,9 @@ const handleRequest = async (req: Request) => {
   }
 };
 
-serve(async (req) => {
+serve((req) => {
   if (req.method === 'OPTIONS') {
     return handlePreflight();
   }
-  
   return handleRequest(req);
 });
