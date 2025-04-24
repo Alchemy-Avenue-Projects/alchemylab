@@ -10,51 +10,48 @@ import { supabase } from '@/integrations/supabase/client';
 export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
   const redirectUri = getRedirectUri(platform);
   
-  // For debugging
   console.log(`Generated ${platform} redirect URI: ${redirectUri}`);
   
   switch (platform) {
     case "facebook": {
-      console.log("[generateOAuthUrl] Entering Facebook flow");
-
       try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-
-        console.log("[generateOAuthUrl] Session fetch result:", data);
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error("❌ Supabase session error:", sessionError);
+          console.error("Failed to get Supabase session:", sessionError);
           throw new Error("Authentication required. Please sign in again.");
         }
 
-        const session = data?.session;
-
         if (!session || !session.access_token) {
-          console.error("❌ No valid session found:", session);
+          console.error("No valid session found");
           throw new Error("No active session. Please sign in again.");
         }
-
+      
         const jwt = session.access_token;
         const state = encodeURIComponent(JSON.stringify({ jwt }));
 
-        const redirectUri = encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`);
         const oauthURL = [
           'https://www.facebook.com/v22.0/dialog/oauth?',
           `client_id=${FB_APP_ID}`,
-          `redirect_uri=${redirectUri}`,
+          `redirect_uri=${encodeURIComponent(`${FN_BASE}/facebook-oauth-callback`)}`,
           'scope=ads_read,ads_management',
           'response_type=code',
           `state=${state}`
         ].join('&');
 
+        console.log("Final Facebook OAuth URL:", oauthURL);
+        
+        if (!oauthURL || !oauthURL.includes('facebook.com')) {
+          throw new Error("Generated Facebook URL is invalid");
+        }
         console.log("✅ Facebook OAuth URL generated:", oauthURL);
-        return oauthURL;
-
+        return oauthURL; // Ensure the URL is returned
       } catch (err) {
-        console.error("🔥 Unexpected error in Facebook generateOAuthUrl:", err);
+        console.error("Unexpected error in generateOAuthUrl for Facebook:", err);
         throw err;
       }
     }
+    // Handle other platforms...
 
     case 'google':
       return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CONFIG.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://www.googleapis.com/auth/adwords&state=${platform}&access_type=offline&prompt=consent`;
