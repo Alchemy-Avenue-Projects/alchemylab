@@ -1,9 +1,8 @@
-
-import React from "react";
+import { type FC } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationItem from "@/components/settings/IntegrationItem";
-import { Platform } from "@/types/platforms";
-import { PlatformConnection } from "@/types/platforms";
+import { type Platform } from "@/types/platforms";
+import { type PlatformConnection } from "@/types/platforms";
 import { 
   Facebook, 
   BarChart3, 
@@ -31,7 +30,7 @@ interface PlatformCategoryProps {
   disconnectingId: string | null;
 }
 
-const PlatformCategory: React.FC<PlatformCategoryProps> = ({
+const PlatformCategory: FC<PlatformCategoryProps> = ({
   title,
   description,
   platforms,
@@ -96,12 +95,14 @@ const PlatformCategory: React.FC<PlatformCategoryProps> = ({
               <IntegrationItem
                 key={platformItem.platform}
                 name={platformItem.name}
-                status={connection ? "connected" : "not-connected"}
-                account={connection?.account_name}
+                status={getConnection(platformItem.platform) ? "connected" : "not-connected"}
+                account={getConnection(platformItem.platform)?.account_name}
                 icon={getPlatformIcon(platformItem.platform)}
                 onConnect={() => onConnect(platformItem.platform)}
                 onDisconnect={
-                  connection ? () => onDisconnect(connection.id) : undefined
+                  getConnection(platformItem.platform)
+                    ? () => onDisconnect(getConnection(platformItem.platform)!.id)
+                    : undefined
                 }
                 isLoading={isLoading}
               />
