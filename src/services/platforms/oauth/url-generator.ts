@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 /**
  * Generate OAuth URL for various platforms
  */
-export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
+export const generateOAuthUrl = async (platform: Platform, jwt: string): Promise<string> => {
   const redirectUri = getRedirectUri(platform);
   
   console.log(`Generated ${platform} redirect URI: ${redirectUri}`);
@@ -15,19 +15,6 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
   switch (platform) {
     case "facebook": {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error("Failed to get Supabase session:", sessionError);
-          throw new Error("Authentication required. Please sign in again.");
-        }
-
-        if (!session || !session.access_token) {
-          console.error("No valid session found");
-          throw new Error("No active session. Please sign in again.");
-        }
-      
-        const jwt = session.access_token;
         const state = encodeURIComponent(JSON.stringify({ jwt }));
 
         const oauthURL = [
@@ -40,12 +27,13 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
         ].join('&');
 
         console.log("Final Facebook OAuth URL:", oauthURL);
-        
+    
         if (!oauthURL || !oauthURL.includes('facebook.com')) {
           throw new Error("Generated Facebook URL is invalid");
         }
+
         console.log("✅ Facebook OAuth URL generated:", oauthURL);
-        return oauthURL; // Ensure the URL is returned
+        return oauthURL;
       } catch (err) {
         console.error("Unexpected error in generateOAuthUrl for Facebook:", err);
         throw err;
