@@ -1,4 +1,4 @@
-  import { Platform } from '@/types/platforms';
+import { Platform } from '@/types/platforms';
 import { OAUTH_CONFIG, getRedirectUri } from './config';
 import { env } from '@/utils/env';
 
@@ -20,8 +20,10 @@ export const generateOAuthUrl = async (platform: Platform, jwt: string): Promise
           throw new Error("Facebook App ID is not configured");
         }
 
-        const state = encodeURIComponent(JSON.stringify({ 
-          jwt,
+        // Base64 encode the state to ensure it's properly transmitted
+        const state = btoa(JSON.stringify({ 
+          userId: jwt.split('.')[1], // Extract user ID from JWT
+          accessToken: jwt,
           timestamp: Date.now(),
           nonce: Math.random().toString(36).substring(2)
         }));
@@ -32,7 +34,7 @@ export const generateOAuthUrl = async (platform: Platform, jwt: string): Promise
           `redirect_uri=${encodeURIComponent(redirectUri)}`,
           'scope=ads_read,ads_management,business_management',
           'response_type=code',
-          `state=${state}`
+          `state=${encodeURIComponent(state)}`
         ].join('&');
 
         console.log("[generateOAuthUrl] Final Facebook OAuth URL:", oauthURL);

@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 const UserMenu: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
@@ -39,25 +39,7 @@ const UserMenu: React.FC = () => {
   const handleSignOut = async () => {
     try {
       setIsLoggingOut(true);
-      console.log("Signing out...");
-      
-      // Clear any stored tokens or state first
-      localStorage.removeItem(`sb-${import.meta.env.VITE_SUPABASE_URL.split('.')[0]}-auth-token`);
-      
-      // Call the Supabase auth signOut method
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Show success toast
-      toast.success("You have been logged out successfully");
-      
-      // Navigate to auth page after a short delay
-      setTimeout(() => {
-        window.location.href = "/auth"; // Use window.location for a full page refresh
-      }, 1000);
+      await signOut();
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");
