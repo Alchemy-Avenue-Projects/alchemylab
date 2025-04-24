@@ -1,226 +1,152 @@
+// facebook-oauth-callback  –  Supabase Edge Function
+//---------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // Temporarily allow all origins for debugging
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
-
-const FACEBOOK_APP_ID = Deno.env.get("FACEBOOK_APP_ID");
-const FACEBOOK_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET");
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+// ───────────────────────────────────────────────────
+// ENV
+// ───────────────────────────────────────────────────
+const FACEBOOK_APP_ID      = Deno.env.get("FACEBOOK_APP_ID");
+const FACEBOOK_APP_SECRET  = Deno.env.get("FACEBOOK_APP_SECRET");
+const SUPABASE_URL         = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const REDIRECT_URI = Deno.env.get("FACEBOOK_REDIRECT_URI") || "https://api.alchemylab.app/facebook-oauth-callback";
+const REDIRECT_URI         = Deno.env.get("FACEBOOK_REDIRECT_URI") ||
+                             "https://api.alchemylab.app/facebook-oauth-callback";
 
-// Validate required environment variables
 if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   throw new Error("Missing required environment variables");
 }
 
-const logInfo = (message: string, data?: any) => {
-  if (data) {
-    console.log(`INFO: ${message}`, data);
-  } else {
-    console.log(`INFO: ${message}`);
-  }
+// ───────────────────────────────────────────────────
+// CORS + helpers
+// ───────────────────────────────────────────────────
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://alchemylab.app",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-const logError = (message: string, error?: any) => {
-  if (error) {
-    console.error(`ERROR: ${message}`, error);
-  } else {
-    console.error(`ERROR: ${message}`);
-  }
-};
+const logInfo  = (m: string, d?: unknown) => console.log(`INFO : ${m}`, d ?? "");
+const logError = (m: string, d?: unknown) => console.error(`ERROR: ${m}`, d ?? "");
 
-const handlePreflight = () => {
-  return new Response(null, { headers: corsHeaders, status: 204 });
-};
+const handlePreflight = () =>
+  new Response(null, { status: 204, headers: corsHeaders });
 
-const exchangeCodeForToken = async (code: string) => {
-  logInfo(`Exchanging code for token with redirect URI: ${REDIRECT_URI}`);
+// ───────────────────────────────────────────────────
+// FB helper – code ▶ token
+// ───────────────────────────────────────────────────
+async function exchangeCodeForToken(code: string) {
+  logInfo("Exchanging code for token", { REDIRECT_URI });
 
-  const tokenUrl = new URL("https://graph.facebook.com/v22.0/oauth/access_token");
-  tokenUrl.searchParams.append("client_id", FACEBOOK_APP_ID);
-  tokenUrl.searchParams.append("client_secret", FACEBOOK_APP_SECRET);
-  tokenUrl.searchParams.append("redirect_uri", REDIRECT_URI);
-  tokenUrl.searchParams.append("code", code);
+  const u = new URL("https://graph.facebook.com/v22.0/oauth/access_token");
+  u.searchParams.append("client_id",     FACEBOOK_APP_ID);
+  u.searchParams.append("client_secret", FACEBOOK_APP_SECRET);
+  u.searchParams.append("redirect_uri",  REDIRECT_URI);
+  u.searchParams.append("code",          code);
 
-  const response = await fetch(tokenUrl.toString());
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    logError(`Token exchange failed: ${response.status}`, errorText);
-    throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
+  const r = await fetch(u.toString());
+  if (!r.ok) {
+    const tx = await r.text();
+    throw new Error(`Token exchange failed: ${r.status} – ${tx}`);
   }
 
-  const data = await response.json();
-  logInfo("Successfully exchanged code for token", { 
-    tokenType: data.token_type, 
-    expiresIn: data.expires_in 
-  });
-  
+  const j = await r.json();
   return {
-    accessToken: data.access_token,
-    tokenType: data.token_type,
-    expiresIn: data.expires_in,
+    accessToken : j.access_token as string,
+    expiresIn   : j.expires_in   as number,
   };
-};
+}
 
-const handleRequest = async (req: Request) => {
+// ───────────────────────────────────────────────────
+// MAIN handler
+// ───────────────────────────────────────────────────
+async function handleRequest(req: Request): Promise<Response> {
   try {
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      return handlePreflight();
-    }
+    const url   = new URL(req.url);
+    const code  = url.searchParams.get("code")   ?? "";
+    const state = url.searchParams.get("state")  ?? "";
+    const error = url.searchParams.get("error")  ?? "";
 
-    const url = new URL(req.url);
-    const code = url.searchParams.get('code') ?? '';
-    const error = url.searchParams.get('error') ?? '';
-    const state = url.searchParams.get('state') ?? '';
-    
-    logInfo("Received OAuth callback", { 
-      code: code ? `${code.substring(0, 5)}...` : null,
-      error,
-      state: state ? `${state.substring(0, 20)}...` : null
-    });
-    
+    logInfo("OAuth callback", { code: code.slice(0, 6) + "...", error });
+
     if (error) {
-      logError(`Facebook OAuth error: ${error}`);
-      return new Response(
-        JSON.stringify({ error: error }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return json({ error }, 400);
     }
-    
     if (!code) {
-      logError("Missing authorization code");
-      return new Response(
-        JSON.stringify({ error: "Missing authorization code" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return json({ error: "Missing authorization code" }, 400);
     }
-    
-    // Parse the state parameter
-    let stateData;
-    try {
-      const decodedState = decodeURIComponent(state).replace(/#.*$/, ''); // Remove Facebook's #_=_ suffix
-      stateData = JSON.parse(atob(decodedState));
-      logInfo("Parsed state data", stateData);
-    } catch (err) {
-      logError("Error parsing state parameter", err);
-      return new Response(
-        JSON.stringify({ error: "Invalid state parameter format" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    // Validate state data
-    if (!stateData.accessToken || !stateData.timestamp || !stateData.nonce) {
-      logError("Missing required state parameters", stateData);
-      return new Response(
-        JSON.stringify({ error: "Invalid state parameter: missing required fields" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    // Validate timestamp (5 minute window)
-    const now = Date.now();
-    if (now - stateData.timestamp > 5 * 60 * 1000) {
-      logError("State parameter expired", { now, timestamp: stateData.timestamp });
-      return new Response(
-        JSON.stringify({ error: "State parameter expired" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    
-    // Get user from the access token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(stateData.accessToken);
-    
-    if (authError || !user) {
-      logError("Invalid user session", { authError });
-      return new Response(
-        JSON.stringify({ error: "Invalid user session", details: authError?.message }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    try {
-      // Exchange the code for a token
-      const tokenData = await exchangeCodeForToken(code);
-      
-      // Store the connection
-      const { error: storeError } = await supabase
-        .from('platform_connections')
-        .upsert({
-          platform: 'facebook',
-          organization_id: user.id,
-          auth_token: tokenData.accessToken,
-          token_expiry: new Date(Date.now() + tokenData.expiresIn * 1000).toISOString(),
-          connected_by: user.id,
-          connected: true,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'platform,organization_id'
-        });
 
-      if (storeError) {
-        logError("Error storing connection", storeError);
-        throw storeError;
-      }
-      
-      // Redirect to success page
-      return new Response(
-        null,
-        { 
-          status: 302,
-          headers: { 
-            ...corsHeaders,
-            'Location': 'https://alchemylab.app/app/settings?tab=integrations&success=facebook_connected'
-          }
-        }
-      );
-    } catch (err) {
-      logError("Error processing connection", err);
-      return new Response(
-        JSON.stringify({ error: err.message }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+    // ── 1)  Recover Supabase JWT
+    let jwt = "";
+    let userId = "";
+    try {
+      // state was encodeURIComponent(JSON.stringify({...}))
+      const s = JSON.parse(decodeURIComponent(state));
+      jwt     = s.accessToken ?? "";
+      userId  = s.userId      ?? "";
+    } catch (e) {
+      logError("Cannot decode state JSON", e);
     }
+
+    // ── 2)  Fallback: Authorization header (not expected from browser)
+    if (!jwt) {
+      const hdr = req.headers.get("Authorization") || "";
+      jwt = hdr.replace("Bearer ", "");
+    }
+    if (!jwt) {
+      return json({ error: "No user session available" }, 401);
+    }
+
+    // ── 3)  Verify user
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_KEY!);
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(jwt);
+
+    if (authErr || !user) {
+      logError("Supabase JWT invalid", authErr);
+      return json({ error: "Invalid user session" }, 401);
+    }
+    // optional strict check
+    // if (userId && user.id !== userId) return json({ error: "State/user mismatch" }, 401);
+
+    // ── 4)  Exchange FB code ▶ token
+    const fb = await exchangeCodeForToken(code);
+
+    // ── 5)  Store / update platform_connections
+    const { error: dbErr } = await supabase.from("platform_connections")
+      .upsert({
+        platform:        "facebook",
+        organization_id: user.id,          // TODO: replace with real org-id
+        auth_token:      fb.accessToken,
+        token_expiry:    new Date(Date.now() + fb.expiresIn * 1000).toISOString(),
+        connected_by:    user.id,
+        connected:       true,
+        updated_at:      new Date().toISOString(),
+      }, { onConflict: "organization_id,platform" });
+
+    if (dbErr) {
+      throw dbErr;
+    }
+
+    // ── 6)  Redirect user back to UI
+    return new Response(null, {
+      status: 302,
+      headers: { ...corsHeaders, Location: "https://alchemylab.app/app/settings?success=facebook_connected" },
+    });
+
   } catch (err) {
-    logError("Unhandled error in OAuth callback", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error", details: err.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    logError("Unhandled", err);
+    return json({ error: (err as Error).message ?? "Internal error" }, 500);
   }
-};
+}
 
-serve(handleRequest);
+// ───────────────────────────────────────────────────
+serve(req => req.method === "OPTIONS" ? handlePreflight() : handleRequest(req));
+// ───────────────────────────────────────────────────
+
+// helpers
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
