@@ -3,6 +3,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/types/database";
 import { toast } from "sonner";
+import { env } from "@/utils/env";
 
 interface AuthContextType {
   user: User | null;
@@ -141,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       // Clear any platform connections from localStorage
-      localStorage.removeItem(`sb-${SUPABASE_URL.split('.')[0]}-auth-token`);
+      localStorage.removeItem(`sb-${env.supabase.url.split('.')[0]}-auth-token`);
       
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();

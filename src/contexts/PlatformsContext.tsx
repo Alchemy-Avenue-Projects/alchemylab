@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
 import { env, validateEnv } from '@/utils/env';
+import { generateOAuthUrl } from '@/services/platforms/oauth/url-generator';
 
 // Validate environment variables on startup
 validateEnv();
@@ -111,36 +112,19 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           return;
         }
 
-        // Construct the Facebook OAuth URL manually
-        const redirectUri = 'https://api.alchemylab.app/facebook-oauth-callback';
-        const scopes = 'ads_management,ads_read,business_management';
-        const state = btoa(JSON.stringify({ 
-          userId: currentSession.user.id,
-          accessToken: currentSession.access_token,
-          timestamp: Date.now(), // Add timestamp to prevent replay attacks
-          nonce: Math.random().toString(36).substring(2) // Add nonce for additional security
-        }));
-
-        const facebookAuthUrl = new URL('https://www.facebook.com/v22.0/dialog/oauth');
-        facebookAuthUrl.searchParams.append('client_id', env.facebook.appId);
-        facebookAuthUrl.searchParams.append('redirect_uri', redirectUri);
-        facebookAuthUrl.searchParams.append('scope', scopes);
-        facebookAuthUrl.searchParams.append('state', state);
-        facebookAuthUrl.searchParams.append('response_type', 'code');
-
-        console.log("🔍 Facebook OAuth URL:", {
-          clientId: env.facebook.appId,
-          redirectUri,
-          scopes,
-          state: state.substring(0, 10) + '...'
-        });
-
-        console.log("✅ Redirecting to Facebook OAuth URL:", facebookAuthUrl.toString());
-        
-        // Add a small delay to ensure logs are visible
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        window.location.href = facebookAuthUrl.toString();
+        try {
+          // Generate the OAuth URL using the URL generator
+          const oauthUrl = await generateOAuthUrl(platform, currentSession.access_token);
+          console.log("✅ Generated OAuth URL:", oauthUrl);
+          
+          // Redirect to the OAuth URL
+          window.location.href = oauthUrl;
+        } catch (err) {
+          console.error("❌ Error generating OAuth URL:", err);
+          toast.error("Connection Error", {
+            description: "Failed to generate authentication URL"
+          });
+        }
         return;
       }
 
