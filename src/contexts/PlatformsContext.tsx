@@ -3,10 +3,12 @@ import { Platform, PlatformConnection } from '@/types/platforms';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { generateOAuthUrl } from '@/services/platforms/oauth/url-generator';
 import { toast } from 'sonner';
-if (!import.meta.env.VITE_FACEBOOK_APP_ID) {
-  console.warn("⚠️ Missing VITE_FACEBOOK_APP_ID in .env — Facebook OAuth may not work.");
+
+// Validate environment variables
+const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
+if (!FACEBOOK_APP_ID) {
+  console.error("❌ Missing VITE_FACEBOOK_APP_ID in .env — Facebook OAuth will not work.");
 }
 
 interface PlatformsContextType {
@@ -70,75 +72,80 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refreshConnections();
   }, [profile?.organization_id]);
 
-const connectPlatform = async (platform: Platform) => {
-  console.log("[PlatformsContext] connectPlatform() called");
+  const connectPlatform = async (platform: Platform) => {
+    console.log("[PlatformsContext] connectPlatform() called");
 
-  try {
-    console.log("[connectPlatform] Called for platform:", platform);
-    console.log(`Starting OAuth flow for ${platform}...`);
+    try {
+      console.log("[connectPlatform] Called for platform:", platform);
+      console.log(`Starting OAuth flow for ${platform}...`);
 
-    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
 
-    if (sessionError) {
-      console.error("[connectPlatform] Supabase session error:", sessionError.message);
-    }
+      if (sessionError) {
+        console.error("[connectPlatform] Supabase session error:", sessionError.message);
+        throw new Error("Failed to get session");
+      }
 
-    if (!currentSession || !currentSession.user || !currentSession.access_token) {
-      console.error("❌ No valid Supabase session or missing user/access_token");
-      toast.error("Authentication Required", {
-        description: "You need to be logged in to connect platforms"
-      });
-      return;
-    }
-
-    console.log("✅ Valid Supabase session found for user:", currentSession.user.id);
-
-    // Skip OAuth for API key platforms
-    if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
-      window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
-      return;
-    }
-
-    if (platform === 'facebook') {
-      const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
-      if (!facebookAppId) {
-        console.error("❌ Missing Facebook App ID");
-        toast.error("Configuration Error", {
-          description: "Facebook App ID is not configured"
+      if (!currentSession || !currentSession.user || !currentSession.access_token) {
+        console.error("❌ No valid Supabase session or missing user/access_token");
+        toast.error("Authentication Required", {
+          description: "You need to be logged in to connect platforms"
         });
         return;
       }
 
-      // Construct the Facebook OAuth URL manually
-      const redirectUri = 'https://api.alchemylab.app/facebook-oauth-callback';
-      const scopes = 'ads_management,ads_read,business_management';
-      const state = btoa(JSON.stringify({ 
-        userId: currentSession.user.id,
-        accessToken: currentSession.access_token
-      }));
+      console.log("✅ Valid Supabase session found for user:", currentSession.user.id);
 
-      const facebookAuthUrl = new URL('https://www.facebook.com/v22.0/dialog/oauth');
-      facebookAuthUrl.searchParams.append('client_id', facebookAppId);
-      facebookAuthUrl.searchParams.append('redirect_uri', redirectUri);
-      facebookAuthUrl.searchParams.append('scope', scopes);
-      facebookAuthUrl.searchParams.append('state', state);
-      facebookAuthUrl.searchParams.append('response_type', 'code');
+      // Skip OAuth for API key platforms
+      if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
+        window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
+        return;
+      }
 
-      console.log("✅ Redirecting to Facebook OAuth URL:", facebookAuthUrl.toString());
-      window.location.href = facebookAuthUrl.toString();
-      return;
+      if (platform === 'facebook') {
+        if (!FACEBOOK_APP_ID) {
+          console.error("❌ Missing Facebook App ID");
+          toast.error("Configuration Error", {
+            description: "Facebook App ID is not configured"
+          });
+          return;
+        }
+
+        // Construct the Facebook OAuth URL manually
+        const redirectUri = 'https://api.alchemylab.app/facebook-oauth-callback';
+        const scopes = 'ads_management,ads_read,business_management';
+        const state = btoa(JSON.stringify({ 
+          userId: currentSession.user.id,
+          accessToken: currentSession.access_token,
+          timestamp: Date.now(), // Add timestamp to prevent replay attacks
+          nonce: Math.random().toString(36).substring(2) // Add nonce for additional security
+        }));
+
+        const facebookAuthUrl = new URL('https://www.facebook.com/v22.0/dialog/oauth');
+        facebookAuthUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
+        facebookAuthUrl.searchParams.append('redirect_uri', redirectUri);
+        facebookAuthUrl.searchParams.append('scope', scopes);
+        facebookAuthUrl.searchParams.append('state', state);
+        facebookAuthUrl.searchParams.append('response_type', 'code');
+
+        console.log("✅ Redirecting to Facebook OAuth URL:", facebookAuthUrl.toString());
+        window.location.href = facebookAuthUrl.toString();
+        return;
+      }
+
+      // Handle other platforms as needed
+      toast.error("Not Implemented", {
+        description: `${platform} integration is not implemented yet.`
+      });
+
+    } catch (err: any) {
+      console.error(`❌ General error during connectPlatform(${platform}):`, err);
+      setError(`Failed to connect to ${platform}: ${err.message}`);
+      toast.error("Connection Error", {
+        description: `Failed to connect to ${platform}: ${err.message}`
+      });
     }
-
-    // Handle other platforms as needed
-
-  } catch (err: any) {
-    console.error(`❌ General error during connectPlatform(${platform}):`, err);
-    setError(`Failed to connect to ${platform}: ${err.message}`);
-    toast.error("Connection Error", {
-      description: `Failed to connect to ${platform}: ${err.message}`
-    });
-  }
-};
+  };
   
   const disconnectPlatform = async (connectionId: string) => {
     if (!profile?.organization_id) return;

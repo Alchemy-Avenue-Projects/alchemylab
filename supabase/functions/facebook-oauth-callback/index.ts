@@ -2,15 +2,21 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://alchemylab.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
-const FACEBOOK_APP_ID = Deno.env.get("FACEBOOK_APP_ID") || "";
-const FACEBOOK_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET") || "";
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
-const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const FACEBOOK_APP_ID = Deno.env.get("FACEBOOK_APP_ID");
+const FACEBOOK_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const REDIRECT_URI = Deno.env.get("FACEBOOK_REDIRECT_URI") || "https://api.alchemylab.app/facebook-oauth-callback";
+
+// Validate required environment variables
+if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  throw new Error("Missing required environment variables");
+}
 
 const logInfo = (message: string, data?: any) => {
   if (data) {
@@ -32,32 +38,7 @@ const handlePreflight = () => {
   return new Response(null, { headers: corsHeaders, status: 204 });
 };
 
-const storeAuthorizationCode = async (supabase: any, code: string, user: any, organizationId: string) => {
-  const { data, error } = await supabase
-    .from('platform_connections')
-    .insert({
-      platform: 'facebook',
-      organization_id: organizationId,
-      auth_code: code,
-      connected_by: user.id,
-      connected: false
-    })
-    .select()
-    .single();
-
-  if (error) {
-    logError('Error storing authorization code', error);
-    throw error;
-  }
-
-  return data;
-};
-
 const exchangeCodeForToken = async (code: string) => {
-  if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
-    throw new Error("Missing Facebook app credentials");
-  }
-
   logInfo(`Exchanging code for token with redirect URI: ${REDIRECT_URI}`);
 
   const tokenUrl = new URL("https://graph.facebook.com/v22.0/oauth/access_token");
@@ -125,11 +106,25 @@ const handleRequest = async (req: Request) => {
     // Parse the state parameter to get user information
     let userId: string | null = null;
     let accessToken: string | null = null;
+    let timestamp: number | null = null;
+    let nonce: string | null = null;
     
     try {
       const stateData = JSON.parse(atob(state));
       userId = stateData.userId;
       accessToken = stateData.accessToken;
+      timestamp = stateData.timestamp;
+      nonce = stateData.nonce;
+
+      // Validate timestamp (prevent replay attacks)
+      if (!timestamp || Date.now() - timestamp > 5 * 60 * 1000) { // 5 minutes
+        throw new Error("State parameter expired");
+      }
+
+      // Validate nonce
+      if (!nonce) {
+        throw new Error("Invalid state parameter: missing nonce");
+      }
     } catch (err) {
       logError("Error parsing state parameter", err);
       return new Response(
@@ -188,7 +183,7 @@ const handleRequest = async (req: Request) => {
           status: 302,
           headers: { 
             ...corsHeaders,
-            'Location': `${window.location.origin}/app/settings?success=facebook_connected`
+            'Location': 'https://alchemylab.app/app/settings?success=facebook_connected'
           }
         }
       );
