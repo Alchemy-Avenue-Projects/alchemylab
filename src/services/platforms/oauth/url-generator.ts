@@ -1,4 +1,4 @@
-import { Platform } from '@/types/platforms';
+  import { Platform } from '@/types/platforms';
 import { OAUTH_CONFIG, getRedirectUri } from './config';
 import { env } from '@/utils/env';
 

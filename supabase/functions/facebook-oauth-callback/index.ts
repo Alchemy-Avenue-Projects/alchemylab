@@ -74,7 +74,7 @@ const handleRequest = async (req: Request) => {
     const code = url.searchParams.get('code') ?? '';
     const error = url.searchParams.get('error') ?? '';
     const state = url.searchParams.get('state') ?? '{}';
-
+    
     logInfo("Received OAuth callback", { 
       code: code ? `${code.substring(0, 5)}...` : null,
       error,
@@ -102,7 +102,7 @@ const handleRequest = async (req: Request) => {
         }
       );
     }
-
+    
     // Parse the state parameter to get user information
     let userId: string | null = null;
     let accessToken: string | null = null;
@@ -143,23 +143,23 @@ const handleRequest = async (req: Request) => {
     
     if (authError || !user || user.id !== userId) {
       logError("Invalid user session", { authError, userId, user });
-      return new Response(
+        return new Response(
         JSON.stringify({ error: "Invalid user session" }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
     try {
       // Exchange the code for a token
       const tokenData = await exchangeCodeForToken(code);
-      
+        
       // Store the connection
       const { data: connection, error: storeError } = await supabase
-        .from('platform_connections')
-        .insert({
+          .from('platform_connections')
+          .insert({
           platform: 'facebook',
           organization_id: user.id,
           auth_token: tokenData.accessToken,
@@ -170,7 +170,7 @@ const handleRequest = async (req: Request) => {
         })
         .select()
         .single();
-      
+
       if (storeError) {
         logError("Error storing connection", storeError);
         throw storeError;
@@ -189,13 +189,13 @@ const handleRequest = async (req: Request) => {
       );
     } catch (err) {
       logError("Error processing connection", err);
-      return new Response(
+    return new Response(
         JSON.stringify({ error: err.message }),
-        { 
+      { 
           status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
     }
   } catch (err) {
     logError("Unhandled error in OAuth callback", err);

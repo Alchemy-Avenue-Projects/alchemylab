@@ -71,46 +71,46 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refreshConnections();
   }, [profile?.organization_id]);
 
-  const connectPlatform = async (platform: Platform) => {
-    console.log("[PlatformsContext] connectPlatform() called");
+const connectPlatform = async (platform: Platform) => {
+  console.log("[PlatformsContext] connectPlatform() called");
 
-    try {
-      console.log("[connectPlatform] Called for platform:", platform);
-      console.log(`Starting OAuth flow for ${platform}...`);
+  try {
+    console.log("[connectPlatform] Called for platform:", platform);
+    console.log(`Starting OAuth flow for ${platform}...`);
 
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
 
-      if (sessionError) {
-        console.error("[connectPlatform] Supabase session error:", sessionError.message);
+    if (sessionError) {
+      console.error("[connectPlatform] Supabase session error:", sessionError.message);
         throw new Error("Failed to get session");
-      }
+    }
 
-      if (!currentSession || !currentSession.user || !currentSession.access_token) {
-        console.error("❌ No valid Supabase session or missing user/access_token");
-        toast.error("Authentication Required", {
-          description: "You need to be logged in to connect platforms"
-        });
-        return;
-      }
+    if (!currentSession || !currentSession.user || !currentSession.access_token) {
+      console.error("❌ No valid Supabase session or missing user/access_token");
+      toast.error("Authentication Required", {
+        description: "You need to be logged in to connect platforms"
+      });
+      return;
+    }
 
-      console.log("✅ Valid Supabase session found for user:", currentSession.user.id);
+    console.log("✅ Valid Supabase session found for user:", currentSession.user.id);
 
-      // Skip OAuth for API key platforms
-      if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
-        window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
-        return;
-      }
+    // Skip OAuth for API key platforms
+    if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
+      window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
+      return;
+    }
 
-      if (platform === 'facebook') {
+    if (platform === 'facebook') {
         console.log("🔍 Checking Facebook App ID:", env.facebook.appId);
-        
+
         if (!env.facebook.appId) {
           console.error("❌ Missing Facebook App ID");
           toast.error("Configuration Error", {
             description: "Facebook App ID is not configured"
-          });
-          return;
-        }
+        });
+        return;
+      }
 
         try {
           console.log("🔍 Generating OAuth URL...");
@@ -128,24 +128,24 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           console.error("❌ Error generating OAuth URL:", err);
           toast.error("Connection Error", {
             description: "Failed to generate authentication URL"
-          });
-        }
-        return;
+        });
       }
+      return;
+    }
 
-      // Handle other platforms as needed
+    // Handle other platforms as needed
       toast.error("Not Implemented", {
         description: `${platform} integration is not implemented yet.`
       });
 
-    } catch (err: any) {
-      console.error(`❌ General error during connectPlatform(${platform}):`, err);
-      setError(`Failed to connect to ${platform}: ${err.message}`);
-      toast.error("Connection Error", {
-        description: `Failed to connect to ${platform}: ${err.message}`
-      });
-    }
-  };
+  } catch (err: any) {
+    console.error(`❌ General error during connectPlatform(${platform}):`, err);
+    setError(`Failed to connect to ${platform}: ${err.message}`);
+    toast.error("Connection Error", {
+      description: `Failed to connect to ${platform}: ${err.message}`
+    });
+  }
+};
   
   const disconnectPlatform = async (connectionId: string) => {
     if (!profile?.organization_id) return;

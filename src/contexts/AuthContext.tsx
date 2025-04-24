@@ -86,9 +86,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         fetchProfile(session.user.id).then(profile => {
           setProfile(profile);
-          setIsLoading(false);
-          clearTimeout(loadingTimeout);
-        });
+            setIsLoading(false);
+            clearTimeout(loadingTimeout);
+          });
       } else {
         setIsLoading(false);
         clearTimeout(loadingTimeout);
@@ -108,11 +108,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      return { error };
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
     } catch (error) {
       console.error("Sign in error:", error);
       toast.error("Failed to sign in");
@@ -122,16 +122,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
         },
-      });
-      return { error };
+      },
+    });
+    return { error };
     } catch (error) {
       console.error("Sign up error:", error);
       toast.error("Failed to sign up");
