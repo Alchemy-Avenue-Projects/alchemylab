@@ -113,11 +113,16 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
 
         try {
+          console.log("🔍 Generating OAuth URL...");
           // Generate the OAuth URL using the URL generator
           const oauthUrl = await generateOAuthUrl(platform, currentSession.access_token);
           console.log("✅ Generated OAuth URL:", oauthUrl);
           
+          // Add a small delay to ensure logs are visible
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           // Redirect to the OAuth URL
+          console.log("🔍 Redirecting to OAuth URL...");
           window.location.href = oauthUrl;
         } catch (err) {
           console.error("❌ Error generating OAuth URL:", err);

@@ -62,45 +62,25 @@ const IntegrationsTab: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   const handleConnect = async (platform: Platform) => {
-/*    if (!profile) {
-      console.warn("[handleConnect] Profile not loaded yet. Deferring connection.");
-  
-      // Show loading toast to inform user
-      toast.info("Loading...", {
-        description: "Please wait while we prepare your profile...",
-      });
-
-      // Wait and retry after 250ms (max 10 retries = 2.5s)
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 250));
-        const latestProfile = supabase.auth.getUser();
-        if (profile) break;
-      }
-
-      if (!profile) {
-        toast.error("Still loading", {
-          description: "We couldn’t load your profile. Try again in a moment.",
-        });
-        return;
-      }
-    }
- */   
     try {
-      console.log(`Connecting to ${platform}...`);
+      console.log(`[IntegrationsTab] Connecting to ${platform}...`);
       setConnectingPlatform(platform);
       
       // Add a debug toast to see if this function is being called
       toast.info(`Connecting to ${platform}...`);
       
+      // Call connectPlatform directly with the platform
       await connectPlatform(platform);
-      toast.success(`Started connection for ${platform}`);
+      
+      // We don't need to show a success toast here because the page will redirect
+      // The success toast will be shown after the redirect
     } catch (error) {
-      console.error(`Error connecting to ${platform}:`, error);
+      console.error(`[IntegrationsTab] Error connecting to ${platform}:`, error);
       toast.error("Connection Failed", {
         description: `Failed to connect to ${platform}. Please try again.`
       });
-    } finally {
-      // We're keeping the loading state here as the page should redirect
+      // Reset the connecting platform state
+      setConnectingPlatform(null);
     }
   };
 
