@@ -34,7 +34,7 @@ export const generateOAuthUrl = async (platform: Platform, jwt: string): Promise
           `redirect_uri=${encodeURIComponent(redirectUri)}`,
           'scope=ads_read,ads_management,business_management',
           'response_type=code',
-          `state=${encodeURIComponent(state)}`
+          `state=${state}`
         ].join('&');
 
         console.log("[generateOAuthUrl] Final Facebook OAuth URL:", oauthURL);
