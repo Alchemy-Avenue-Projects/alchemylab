@@ -1,5 +1,5 @@
 // facebook-oauth-callback  –  Supabase Edge Function
-// --------------------------------------------------
+//----------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
@@ -10,9 +10,8 @@ const FACEBOOK_APP_ID      = Deno.env.get("FACEBOOK_APP_ID");
 const FACEBOOK_APP_SECRET  = Deno.env.get("FACEBOOK_APP_SECRET");
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const REDIRECT_URI         =
-  Deno.env.get("FACEBOOK_REDIRECT_URI") ??
-  "https://api.alchemylab.app/facebook-oauth-callback";
+const REDIRECT_URI         = Deno.env.get("FACEBOOK_REDIRECT_URI")
+  || "https://api.alchemylab.app/facebook-oauth-callback";
 
 if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   throw new Error("Missing required environment variables");
@@ -23,8 +22,7 @@ if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVI
 // ───────────────────────────────────────────────────
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://alchemylab.app",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
@@ -41,24 +39,37 @@ function json(body: unknown, status = 200) {
 }
 
 // ───────────────────────────────────────────────────
-// FB helper – code ▶ token
+// Helper: safely decode the state parameter
+// ───────────────────────────────────────────────────
+function decodeState(str: string): Record<string, unknown> | null {
+  try {
+    // state was created as  encodeURIComponent( btoa(JSON.stringify(obj)) )
+    const json = atob(decodeURIComponent(str));
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+// ───────────────────────────────────────────────────
+// FB helper – exchange code ▶ access token
 // ───────────────────────────────────────────────────
 async function exchangeCodeForToken(code: string) {
   logInfo("Exchanging code for token", { REDIRECT_URI });
 
-  const url = new URL("https://graph.facebook.com/v22.0/oauth/access_token");
-  url.searchParams.append("client_id",     FACEBOOK_APP_ID);
-  url.searchParams.append("client_secret", FACEBOOK_APP_SECRET);
-  url.searchParams.append("redirect_uri",  REDIRECT_URI);
-  url.searchParams.append("code",          code);
+  const u = new URL("https://graph.facebook.com/v22.0/oauth/access_token");
+  u.searchParams.append("client_id",     FACEBOOK_APP_ID);
+  u.searchParams.append("client_secret", FACEBOOK_APP_SECRET);
+  u.searchParams.append("redirect_uri",  REDIRECT_URI);
+  u.searchParams.append("code",          code);
 
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Token exchange failed: ${res.status} – ${t}`);
+  const r = await fetch(u.toString());
+  if (!r.ok) {
+    const tx = await r.text();
+    throw new Error(`Token exchange failed: ${r.status} – ${tx}`);
   }
 
-  const j = await res.json();
+  const j = await r.json();
   return {
     accessToken : j.access_token as string,
     expiresIn   : j.expires_in   as number,
@@ -80,19 +91,20 @@ async function handleRequest(req: Request): Promise<Response> {
     if (error)  return json({ error }, 400);
     if (!code)  return json({ error: "Missing authorization code" }, 400);
 
-    // ── 1)  recover JWT from state (exactly how your front-end sent it)
-    let jwt = "";
-    try {
-      const parsed = JSON.parse(decodeURIComponent(state));
-      jwt = parsed.jwt || parsed.accessToken || "";
-    } catch (e) {
-      logError("Cannot decode state JSON", e);
-    }
+    // 1️⃣ ─────────────────────────────────────────────
+    // Recover Supabase JWT from state
+    // ------------------------------------------------
+    const s   = decodeState(state);
+    const jwt = (s?.jwt as string | undefined) ??
+                (s?.accessToken as string | undefined) ??
+                "";
 
     if (!jwt) return json({ error: "No user session available" }, 401);
 
-    // ── 2)  verify user via Supabase
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    // 2️⃣ ─────────────────────────────────────────────
+    // Verify JWT & get user
+    // ------------------------------------------------
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_KEY!);
     const { data: { user }, error: authErr } = await supabase.auth.getUser(jwt);
 
     if (authErr || !user) {
@@ -100,41 +112,31 @@ async function handleRequest(req: Request): Promise<Response> {
       return json({ error: "Invalid user session" }, 401);
     }
 
-    // ── 3)  get the user's organization_id from profiles
-    const { data: profile, error: profileErr } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (profileErr || !profile?.organization_id) {
-      logError("User has no organization", profileErr);
-      return json({ error: "User is not linked to an organization" }, 400);
-    }
-    const orgId = profile.organization_id;
-
-    // ── 4)  exchange FB code → token
+    // 3️⃣ ─────────────────────────────────────────────
+    // Exchange FB code ▶ token
+    // ------------------------------------------------
     const fb = await exchangeCodeForToken(code);
 
-    // ── 5)  upsert connection row
+    // 4️⃣ ─────────────────────────────────────────────
+    // Store / upsert platform connection
+    // ------------------------------------------------
     const { error: dbErr } = await supabase
       .from("platform_connections")
-      .upsert(
-        {
-          platform:        "facebook",
-          organization_id: orgId,
-          auth_token:      fb.accessToken,
-          token_expiry:    new Date(Date.now() + fb.expiresIn * 1000).toISOString(),
-          connected_by:    user.id,
-          connected:       true,
-          updated_at:      new Date().toISOString(),
-        },
-        { onConflict: "organization_id,platform" },
-      );
+      .upsert({
+        platform:        "facebook",
+        organization_id: user.id,          // TODO: replace with org-id column if you have it
+        auth_token:      fb.accessToken,
+        token_expiry:    new Date(Date.now() + fb.expiresIn * 1000).toISOString(),
+        connected_by:    user.id,
+        connected:       true,
+        updated_at:      new Date().toISOString(),
+      }, { onConflict: "organization_id,platform" });
 
     if (dbErr) throw dbErr;
 
-    // ── 6)  redirect back to your UI
+    // 5️⃣ ─────────────────────────────────────────────
+    // Redirect back to the app
+    // ------------------------------------------------
     return new Response(null, {
       status: 302,
       headers: {
@@ -149,4 +151,4 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 }
 
-serve(req => (req.method === "OPTIONS" ? handlePreflight() : handleRequest(req)));
+serve(req => req.method === "OPTIONS" ? handlePreflight() : handleRequest(req));
