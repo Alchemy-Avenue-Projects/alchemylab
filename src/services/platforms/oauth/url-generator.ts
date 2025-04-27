@@ -22,10 +22,10 @@ export const generateOAuthUrl = async (platform: Platform, jwt: string): Promise
 
         // Base64 encode the state to ensure it's properly transmitted
         const state = btoa(JSON.stringify({ 
-          userId: jwt.split('.')[1], // Extract user ID from JWT
-          accessToken: jwt,
+          userId,
+          jwt: jwt,
           timestamp: Date.now(),
-          nonce: Math.random().toString(36).substring(2)
+          nonce: crypto.randomUUID(),
         }));
 
         const oauthURL = [
