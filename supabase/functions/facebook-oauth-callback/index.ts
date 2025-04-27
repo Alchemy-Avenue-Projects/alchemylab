@@ -69,35 +69,23 @@ async function handleRequest(req: Request): Promise<Response> {
 
     logInfo("OAuth callback", { code: code.slice(0, 6) + "...", error });
 
-    if (error) {
-      return json({ error }, 400);
-    }
-    if (!code) {
-      return json({ error: "Missing authorization code" }, 400);
-    }
+    if (error)          return json({ error }, 400);
+    if (!code)          return json({ error: "Missing authorization code" }, 400);
 
-    // ── 1)  Recover Supabase JWT
+    // ── 1)  Recover Supabase JWT *exactly* as your front-end sends it
     let jwt = "";
-    let userId = "";
     try {
-      // state was encodeURIComponent(JSON.stringify({...}))
       const s = JSON.parse(decodeURIComponent(state));
-      jwt     = s.accessToken ?? "";
-      userId  = s.userId      ?? "";
+      jwt = s.jwt            // ←  sent by your React code
+         || s.accessToken    // ←  keep fallback so we can rename later
+         || "";
     } catch (e) {
       logError("Cannot decode state JSON", e);
     }
 
-    // ── 2)  Fallback: Authorization header (not expected from browser)
-    if (!jwt) {
-      const hdr = req.headers.get("Authorization") || "";
-      jwt = hdr.replace("Bearer ", "");
-    }
-    if (!jwt) {
-      return json({ error: "No user session available" }, 401);
-    }
+    if (!jwt)  return json({ error: "No user session available" }, 401);
 
-    // ── 3)  Verify user
+    // ── 2)  Verify user
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_KEY!);
     const { data: { user }, error: authErr } = await supabase.auth.getUser(jwt);
 
@@ -105,17 +93,15 @@ async function handleRequest(req: Request): Promise<Response> {
       logError("Supabase JWT invalid", authErr);
       return json({ error: "Invalid user session" }, 401);
     }
-    // optional strict check
-    // if (userId && user.id !== userId) return json({ error: "State/user mismatch" }, 401);
 
-    // ── 4)  Exchange FB code ▶ token
+    // ── 3)  Exchange FB code ▶ token
     const fb = await exchangeCodeForToken(code);
 
-    // ── 5)  Store / update platform_connections
+    // ── 4)  Upsert / store
     const { error: dbErr } = await supabase.from("platform_connections")
       .upsert({
         platform:        "facebook",
-        organization_id: user.id,          // TODO: replace with real org-id
+        organization_id: user.id,          // TODO: use real org-id if you have it
         auth_token:      fb.accessToken,
         token_expiry:    new Date(Date.now() + fb.expiresIn * 1000).toISOString(),
         connected_by:    user.id,
@@ -123,11 +109,9 @@ async function handleRequest(req: Request): Promise<Response> {
         updated_at:      new Date().toISOString(),
       }, { onConflict: "organization_id,platform" });
 
-    if (dbErr) {
-      throw dbErr;
-    }
+    if (dbErr) throw dbErr;
 
-    // ── 6)  Redirect user back to UI
+    // ── 5)  Redirect back to UI
     return new Response(null, {
       status: 302,
       headers: { ...corsHeaders, Location: "https://alchemylab.app/app/settings?success=facebook_connected" },
@@ -139,11 +123,8 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 }
 
-// ───────────────────────────────────────────────────
 serve(req => req.method === "OPTIONS" ? handlePreflight() : handleRequest(req));
-// ───────────────────────────────────────────────────
 
-// helpers
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
