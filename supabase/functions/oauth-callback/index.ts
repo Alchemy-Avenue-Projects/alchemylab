@@ -1,17 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// CORS allowlist (comma-separated) configurable via env; defaults to production and localhost
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://alchemylab.app,https://www.alchemylab.app,http://localhost:5173,http://127.0.0.1:5173").split(",").map(o => o.trim());
+
+const getCorsHeaders = (origin?: string) => {
+  const allowOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  } as Record<string, string>;
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 // Handle CORS preflight requests
-const handlePreflight = () => {
-  return new Response(null, { headers: corsHeaders, status: 204 });
+const handlePreflight = (origin?: string) => {
+  return new Response(null, { headers: getCorsHeaders(origin), status: 204 });
 };
 
 // Exchange authorization code for access token
@@ -156,9 +163,31 @@ const getAccountInfo = async (platform: string, accessToken: string) => {
   return { accountName, accountId };
 };
 
+// Simple AES-GCM encryption helper using a base64 key from env ENCRYPTION_KEY
+const getCryptoKey = async () => {
+  const base64Key = Deno.env.get('ENCRYPTION_KEY') || '';
+  if (!base64Key) return null;
+  const raw = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
+  return await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt']);
+};
+
+const encrypt = async (plaintext: string): Promise<string> => {
+  const key = await getCryptoKey();
+  if (!key) return plaintext; // fallback to plaintext if key not configured
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(plaintext);
+  const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+  const combined = new Uint8Array(iv.length + cipherBuf.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(cipherBuf), iv.length);
+  return btoa(String.fromCharCode(...combined));
+};
+
 const handleRequest = async (req: Request) => {
   try {
     const { code, state, redirectUri } = await req.json();
+    const origin = req.headers.get('Origin') || undefined;
+    const corsHeaders = getCorsHeaders(origin);
     
     // Validate inputs
     if (!code || !state || !redirectUri) {
@@ -204,13 +233,16 @@ const handleRequest = async (req: Request) => {
     }
     
     // Store connection in database
+    const encAccess = await encrypt(tokenInfo.accessToken);
+    const encRefresh = tokenInfo.refreshToken ? await encrypt(tokenInfo.refreshToken) : null;
+
     const { data: connection, error: insertError } = await supabase
       .from('platform_connections')
       .insert({
         platform: state,
         organization_id: userProfile.organization_id,
-        auth_token: tokenInfo.accessToken,
-        refresh_token: tokenInfo.refreshToken,
+        auth_token: encAccess,
+        refresh_token: encRefresh,
         token_expiry: tokenInfo.expiresAt,
         account_name: accountInfo.accountName || 'Connected Account',
         account_id: accountInfo.accountId,
@@ -232,9 +264,10 @@ const handleRequest = async (req: Request) => {
     );
   } catch (error) {
     console.error('OAuth callback error:', error);
-    
+    const origin = (error as any)?.origin || undefined;
+    const corsHeaders = getCorsHeaders(origin);
     return new Response(
-      JSON.stringify({ error: `${error.message || 'Internal server error'}` }),
+      JSON.stringify({ error: `${(error as any).message || 'Internal server error'}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -243,7 +276,8 @@ const handleRequest = async (req: Request) => {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return handlePreflight();
+    const origin = req.headers.get('Origin') || undefined;
+    return handlePreflight(origin);
   }
   
   // Handle the actual request
@@ -251,6 +285,8 @@ serve(async (req) => {
     return handleRequest(req);
   }
   
+  const origin = req.headers.get('Origin') || undefined;
+  const corsHeaders = getCorsHeaders(origin);
   return new Response(
     JSON.stringify({ error: 'Method not allowed' }),
     { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

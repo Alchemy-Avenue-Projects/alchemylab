@@ -3,7 +3,11 @@ export const validateEnv = () => {
   const requiredVars = [
     'VITE_FACEBOOK_APP_ID',
     'VITE_SUPABASE_URL',
-    'VITE_SUPABASE_ANON_KEY'
+    'VITE_SUPABASE_ANON_KEY',
+    // Additional platform client IDs (optional per deployment, but validate for safety)
+    'VITE_GOOGLE_CLIENT_ID',
+    'VITE_LINKEDIN_CLIENT_ID',
+    'VITE_TIKTOK_CLIENT_ID'
   ];
 
   const missingVars = requiredVars.filter(varName => !import.meta.env[varName]);

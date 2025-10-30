@@ -115,7 +115,7 @@ const connectPlatform = async (platform: Platform) => {
         try {
           console.log("🔍 Generating OAuth URL...");
           // Generate the OAuth URL using the URL generator
-          const oauthUrl = await generateOAuthUrl(platform, currentSession.access_token);
+          const oauthUrl = await generateOAuthUrl(platform);
           console.log("✅ Generated OAuth URL:", oauthUrl);
           
           // Add a small delay to ensure logs are visible
