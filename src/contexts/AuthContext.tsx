@@ -77,15 +77,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let cancelled = false;
+    let loadingTimeout: ReturnType<typeof setTimeout> | null = null;
+    
     // Add a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      console.log("Auth loading timeout reached, forcing loading state to false");
-      setIsLoading(false);
+    loadingTimeout = setTimeout(() => {
+      if (!cancelled) {
+        console.log("Auth loading timeout reached, forcing loading state to false");
+        setIsLoading(false);
+      }
     }, 10000); // Increased timeout to 10 seconds
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (cancelled) return;
+        
         console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
@@ -93,42 +100,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch user profile if authenticated
         if (session?.user) {
           const userProfile = await fetchProfile(session.user.id);
-          setProfile(userProfile);
+          if (!cancelled) {
+            setProfile(userProfile);
+          }
         } else {
           setProfile(null);
         }
         
-        setIsLoading(false);
-        clearTimeout(loadingTimeout);
+        if (!cancelled) {
+          setIsLoading(false);
+          if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+          }
+        }
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      
       console.log("Initial session check:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         fetchProfile(session.user.id).then(profile => {
-          setProfile(profile);
+          if (!cancelled) {
+            setProfile(profile);
             setIsLoading(false);
-            clearTimeout(loadingTimeout);
-          });
+            if (loadingTimeout) {
+              clearTimeout(loadingTimeout);
+            }
+          }
+        });
       } else {
         setIsLoading(false);
-        clearTimeout(loadingTimeout);
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout);
+        }
       }
     }).catch(error => {
-      console.error("Session fetch error:", error);
-      toast.error("Failed to load session");
-      setIsLoading(false);
-      clearTimeout(loadingTimeout);
+      if (!cancelled) {
+        console.error("Session fetch error:", error);
+        toast.error("Failed to load session");
+        setIsLoading(false);
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout);
+        }
+      }
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
-      clearTimeout(loadingTimeout);
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
     };
   }, []);
 

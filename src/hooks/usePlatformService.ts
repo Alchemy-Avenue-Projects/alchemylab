@@ -13,14 +13,20 @@ export const usePlatformService = (platform: Platform, connectionId?: string) =>
   const { profile } = useAuth();
 
   useEffect(() => {
+    let cancelled = false;
+    
     const loadCredentials = async () => {
       if (!profile?.organization_id) {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
         return;
       }
 
       try {
-        setIsLoading(true);
+        if (!cancelled) {
+          setIsLoading(true);
+        }
         
         let query = supabase
           .from('platform_connections')
@@ -34,13 +40,17 @@ export const usePlatformService = (platform: Platform, connectionId?: string) =>
         
         const { data, error: fetchError } = await query.maybeSingle();
 
+        if (cancelled) return;
+
         if (fetchError) {
           throw fetchError;
         }
 
         if (!data) {
-          setService(PlatformServiceFactory.getService(platform));
-          setIsLoading(false);
+          if (!cancelled) {
+            setService(PlatformServiceFactory.getService(platform));
+            setIsLoading(false);
+          }
           return;
         }
 
@@ -51,18 +61,28 @@ export const usePlatformService = (platform: Platform, connectionId?: string) =>
           accountId: data.account_id
         };
 
-        setService(PlatformServiceFactory.getService(platform, credentials));
+        if (!cancelled) {
+          setService(PlatformServiceFactory.getService(platform, credentials));
+        }
       } catch (err) {
-        console.error(`Error loading ${platform} credentials:`, err);
-        setError(`Failed to load ${platform} credentials.`);
-        // Create a service without credentials
-        setService(PlatformServiceFactory.getService(platform));
+        if (!cancelled) {
+          console.error(`Error loading ${platform} credentials:`, err);
+          setError(`Failed to load ${platform} credentials.`);
+          // Create a service without credentials
+          setService(PlatformServiceFactory.getService(platform));
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadCredentials();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [platform, connectionId, profile?.organization_id]);
 
   return { service, isLoading, error };

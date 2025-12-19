@@ -50,6 +50,10 @@ export abstract class PlatformService {
         throw new Error(result.error.message);
       }
       
+      if (!result.data || !result.data.accessToken || !result.data.expiresAt) {
+        throw new Error('Invalid token refresh response: missing data');
+      }
+      
       this.credentials = {
         ...this.credentials,
         accessToken: result.data.accessToken,

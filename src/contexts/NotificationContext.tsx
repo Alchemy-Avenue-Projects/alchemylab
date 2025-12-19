@@ -51,11 +51,47 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   useEffect(() => {
-    fetchNotifications();
+    let cancelled = false;
+    
+    const loadNotifications = async () => {
+      if (!user) {
+        setNotifications([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+        
+        if (!cancelled) {
+          setNotifications(data || []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error fetching notifications:', err);
+          setError(err instanceof Error ? err : new Error('Failed to fetch notifications'));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    loadNotifications();
     
     // Set up realtime subscription for new notifications
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     if (user) {
-      const channel = supabase
+      channel = supabase
         .channel('notification-changes')
         .on(
           'postgres_changes',
@@ -66,17 +102,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            // Add the new notification to the state
-            setNotifications(prev => [payload.new as Notification, ...prev]);
-            toast(`New notification: ${(payload.new as Notification).title}`);
+            if (!cancelled) {
+              // Add the new notification to the state
+              setNotifications(prev => [payload.new as Notification, ...prev]);
+              toast(`New notification: ${(payload.new as Notification).title}`);
+            }
           }
         )
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
+
+    return () => {
+      cancelled = true;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {

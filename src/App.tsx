@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from './contexts/AuthContext';
 import { PlatformsProvider } from './contexts/PlatformsContext';
@@ -24,26 +23,24 @@ import Pricing from './pages/Pricing';
 import Auth from './pages/Auth';
 import AuthCallback from './pages/api/AuthCallback';
 
-const queryClient = new QueryClient();
-
 function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Simulate loading delay
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setLoading(false);
     }, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <PlatformsProvider>
-            <Toaster />
-            <SonnerToaster />
-            <Routes>
+    <BrowserRouter>
+      <AuthProvider>
+        <PlatformsProvider>
+          <Toaster />
+          <SonnerToaster />
+          <Routes>
               {/* Landing Routes */}
               <Route path="/" element={<Homepage />} />
               <Route path="/features" element={<Features />} />
@@ -76,7 +73,6 @@ function App() {
           </PlatformsProvider>
         </AuthProvider>
       </BrowserRouter>
-    </QueryClientProvider>
   );
 }
 
