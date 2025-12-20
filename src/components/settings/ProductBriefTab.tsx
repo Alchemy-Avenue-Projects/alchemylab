@@ -11,7 +11,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const ProductBriefTab: React.FC = () => {
   const { toast } = useToast();
   const { connections } = usePlatforms();
-  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const {
     products,
     isLoading,
@@ -26,23 +25,6 @@ const ProductBriefTab: React.FC = () => {
     refetch
   } = useProductBriefService();
 
-  useEffect(() => {
-    if (!isLoading) {
-      setLoadingTimedOut(false);
-    }
-  }, [isLoading]);
-
-  useEffect(() => {
-    if (isLoading) {
-      const timeoutId = setTimeout(() => {
-        console.log("Loading timeout reached for product briefs");
-        setLoadingTimedOut(true);
-      }, 10000); // Increased from 3s to 10s
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isLoading]);
-
   const handleAccountToggleWrapper = (productIndex: number, accountId: string) => {
     handleAccountToggle(productIndex, accountId);
   };
@@ -55,23 +37,7 @@ const ProductBriefTab: React.FC = () => {
     handleSave(connections, index);
   };
 
-  const showContent = !isLoading || loadingTimedOut || hasAttemptedFetch;
-
-  if (isLoading && !loadingTimedOut && !hasAttemptedFetch) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-48 w-full" />
-        <div className="flex justify-center items-center py-4">
-          <Loader2 className="h-6 w-6 text-primary animate-spin mr-2" />
-          <span>Loading product briefs...</span>
-        </div>
-      </div>
-    );
-  }
-
   const handleRetry = async () => {
-    setLoadingTimedOut(false);
     try {
       await refetch();
     } catch (error) {
@@ -84,14 +50,29 @@ const ProductBriefTab: React.FC = () => {
     }
   };
 
-  const renderLoadingWarning = () => {
-    if (loadingTimedOut && isLoading) {
-      return (
-        <Alert variant="warning" className="mb-6">
+  // Show loading state only if we haven't attempted fetch yet
+  if (isLoading && !hasAttemptedFetch) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-48 w-full" />
+        <div className="flex justify-center items-center py-4">
+          <Loader2 className="h-6 w-6 text-primary animate-spin mr-2" />
+          <span>Loading product briefs...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if loading failed and we have no products
+  if (!isLoading && hasAttemptedFetch && products.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Loading Timeout</AlertTitle>
+          <AlertTitle>Failed to Load Product Briefs</AlertTitle>
           <AlertDescription className="flex items-center justify-between">
-            <span>Loading product briefs is taking longer than expected. This may indicate a connection issue.</span>
+            <span>Unable to load product briefs. Please try again.</span>
             <Button 
               variant="outline" 
               size="sm" 
@@ -102,15 +83,13 @@ const ProductBriefTab: React.FC = () => {
             </Button>
           </AlertDescription>
         </Alert>
-      );
-    }
-    return null;
-  };
+        <Button onClick={handleAddProduct}>Create First Brief</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {renderLoadingWarning()}
-      
       {products.length === 0 ? (
         <div className="text-center p-8">
           <p className="text-muted-foreground mb-4">No product briefs found. Create one to get started.</p>

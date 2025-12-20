@@ -57,10 +57,23 @@ async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: getCors(req.headers.get('Origin') || undefined) });
 
   try {
-    const url   = new URL(req.url);
-    const code  = url.searchParams.get("code")   ?? "";
-    const rawSt = url.searchParams.get("state")  ?? "";
-    const error = url.searchParams.get("error")  ?? "";
+    // Handle both GET (from Facebook redirect) and POST (from frontend invoke)
+    let code: string;
+    let rawSt: string;
+    let error: string;
+    
+    if (req.method === "GET") {
+      const url = new URL(req.url);
+      code = url.searchParams.get("code") ?? "";
+      rawSt = url.searchParams.get("state") ?? "";
+      error = url.searchParams.get("error") ?? "";
+    } else {
+      // POST request from frontend
+      const body = await req.json();
+      code = body.code ?? "";
+      rawSt = body.state ?? "";
+      error = body.error ?? "";
+    }
 
     if (error) return json({ error }, 400, req.headers.get('Origin') || undefined);
     if (!code) return json({ error: "Missing authorization code" }, 400, req.headers.get('Origin') || undefined);
@@ -107,7 +120,7 @@ async function handler(req: Request): Promise<Response> {
       storedToken = btoa(String.fromCharCode(...combined));
     }
 
-    const { error: dbErr } = await sb.from("platform_connections").upsert(
+    const { data: platformConnection, error: dbErr } = await sb.from("platform_connections").upsert(
       {
         platform:        "facebook",
         organization_id: orgId,             // ✅ FK now points to a real organization
@@ -118,24 +131,75 @@ async function handler(req: Request): Promise<Response> {
         updated_at:      new Date().toISOString(),
       },
       { onConflict: "organization_id,platform" },
-    );
+    ).select().single();
     if (dbErr) throw dbErr;
 
-    // 6) redirect back to UI
-    // Get frontend URL from environment or use first allowed origin
-    const frontendUrl = Deno.env.get("FRONTEND_URL") || ALLOWED_ORIGINS[0];
-    const redirectUrl = `${frontendUrl}/app/settings?success=facebook_connected`;
+    // 6) Create corresponding ad_account record
+    // Get or create a client for this organization
+    const { data: clients, error: clientsError } = await sb
+      .from("clients")
+      .select("id")
+      .eq("organization_id", orgId)
+      .limit(1);
+
+    let clientId: string | null = null;
     
+    if (clientsError || !clients || clients.length === 0) {
+      // Create a default client for this organization
+      const { data: orgData } = await sb
+        .from("organizations")
+        .select("name")
+        .eq("id", orgId)
+        .single();
+
+      const { data: newClient, error: createClientError } = await sb
+        .from("clients")
+        .insert({
+          organization_id: orgId,
+          name: `${orgData?.name || "Default"} Client`
+        })
+        .select("id")
+        .single();
+
+      if (createClientError || !newClient) {
+        console.error("Failed to create default client:", createClientError);
+        // Continue without creating ad_account - it can be created later
+      } else {
+        clientId = newClient.id;
+      }
+    } else {
+      clientId = clients[0].id;
+    }
+
+    // Create ad_account if we have a client
+    if (clientId && platformConnection) {
+      const accountIdOnPlatform = platformConnection.account_id || platformConnection.id;
+      
+      const { error: adAccountError } = await sb.from("ad_accounts").upsert(
+        {
+          client_id: clientId,
+          platform: "facebook" as any,
+          account_name: platformConnection.account_name || "Facebook Account",
+          account_id_on_platform: accountIdOnPlatform,
+          auth_token: storedToken,
+          connected_at: new Date().toISOString(),
+        },
+        { onConflict: "client_id,platform,account_id_on_platform" },
+      );
+
+      if (adAccountError) {
+        console.error("Failed to create ad_account:", adAccountError);
+        // Don't fail the whole operation - platform_connection was created successfully
+      }
+    }
+
+    // 7) Return JSON response (frontend will handle redirect)
     const origin = req.headers.get('Origin') || undefined;
-    const corsHeaders = getCors(origin);
-    
-    return new Response(null, {
-      status: 302,
-      headers: { 
-        ...corsHeaders, 
-        Location: redirectUrl 
-      },
-    });
+    return json({ 
+      success: true, 
+      message: "Facebook connection established successfully",
+      platformConnectionId: platformConnection?.id 
+    }, 200, origin);
 
   } catch (e) {
     return json({ error: (e as Error).message ?? "Internal error" }, 500, req.headers.get('Origin') || undefined);

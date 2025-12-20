@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { ProductBriefFormData } from "../types";
+import { getOrCreateAdAccount, getAdAccountIdFromPlatformConnection } from "@/services/platforms/adAccountSync";
 
 export const fetchProductBriefsFromApi = async (userId: string) => {
   console.log("Fetching product briefs for user:", userId);
@@ -91,17 +92,48 @@ export const deleteProductAccounts = async (productId: string) => {
   if (error) throw error;
 };
 
-export const saveProductAccounts = async (productId: string, selectedAccounts: string[]) => {
+export const saveProductAccounts = async (
+  productId: string, 
+  selectedAccounts: string[],
+  organizationId: string
+) => {
   if (selectedAccounts.length > 0) {
-    const accountMappings = selectedAccounts.map(accountId => ({
-      product_brief_id: productId,
-      ad_account_id: accountId
-    }));
+    // Map platform_connection.id to ad_account_id
+    // selectedAccounts contains platform_connection.id values from the UI
+    const adAccountIds = await Promise.all(
+      selectedAccounts.map(async (platformConnectionId) => {
+        // First try to get existing ad_account
+        let adAccountId = await getAdAccountIdFromPlatformConnection(
+          platformConnectionId,
+          organizationId
+        );
+        
+        // If not found, create one
+        if (!adAccountId) {
+          adAccountId = await getOrCreateAdAccount(
+            platformConnectionId,
+            organizationId
+          );
+        }
+        
+        return adAccountId;
+      })
+    );
     
-    const { error: insertError } = await supabase
-      .from('product_brief_accounts')
-      .insert(accountMappings);
+    // Filter out any null values (shouldn't happen, but be safe)
+    const validAdAccountIds = adAccountIds.filter((id): id is string => id !== null);
+    
+    if (validAdAccountIds.length > 0) {
+      const accountMappings = validAdAccountIds.map(adAccountId => ({
+        product_brief_id: productId,
+        ad_account_id: adAccountId
+      }));
       
-    if (insertError) throw insertError;
+      const { error: insertError } = await supabase
+        .from('product_brief_accounts')
+        .insert(accountMappings);
+        
+      if (insertError) throw insertError;
+    }
   }
 };

@@ -42,15 +42,9 @@ const getSupabaseProjectRef = (): string | null => {
 
 // Get the appropriate redirect URI based on platform
 export const getRedirectUri = (platform: string): string => {
-  // For Facebook, use Supabase edge function URL instead of VPS
+  // For Facebook, use alchemylab.app domain (required for Facebook OAuth verification)
   if (platform === 'facebook') {
-    const projectRef = getSupabaseProjectRef();
-    if (projectRef) {
-      return `https://${projectRef}.supabase.co/functions/v1/facebook-oauth-callback`;
-    }
-    // Fallback to VPS if project ref cannot be determined
-    console.warn('Could not determine Supabase project ref, falling back to VPS URL');
-    return 'https://api.alchemylab.app/facebook-oauth-callback';
+    return 'https://alchemylab.app/facebook-oauth-callback';
   }
   
   // Default redirect URI for most platforms uses the dynamic origin

@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { SaveProductParams, ProductBriefFormData } from "../types";
 import { validateProductBrief } from "../utils/productBriefUtils";
 import { saveProductToApi, deleteProductAccounts, saveProductAccounts } from "../api/productBriefApi";
@@ -8,12 +9,22 @@ import { saveProductToApi, deleteProductAccounts, saveProductAccounts } from "..
 export const useSaveProductBrief = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   const saveProduct = async ({ product, userId }: SaveProductParams) => {
     if (!validateProductBrief(product)) {
       toast({
         title: "Validation Error",
         description: "Product name is required.",
+        variant: "destructive"
+      });
+      return null;
+    }
+    
+    if (!profile?.organization_id) {
+      toast({
+        title: "Error",
+        description: "Organization not found. Please ensure you're logged in.",
         variant: "destructive"
       });
       return null;
@@ -27,8 +38,9 @@ export const useSaveProductBrief = () => {
         await deleteProductAccounts(productId);
         
         // Insert new account associations
+        // Map platform_connection.id to ad_account_id
         if (product.selectedAccounts.length > 0) {
-          await saveProductAccounts(productId, product.selectedAccounts);
+          await saveProductAccounts(productId, product.selectedAccounts, profile.organization_id);
         }
       }
       

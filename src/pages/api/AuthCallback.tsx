@@ -19,33 +19,58 @@ const AuthCallback = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Extract code from URL
+      // Extract code and state from URL
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const error = urlParams.get('error');
-      const platformState = urlParams.get('state') || platformName;
+      const rawState = urlParams.get('state');
       
       console.log(`Processing OAuth callback for ${platformName} with code: ${code ? `${code.substring(0, 5)}...` : 'missing'}`);
-      console.log(`Auth state - User: ${!!user}, Session: ${!!session}, Profile: ${!!profile}, Loading: ${isLoading}`);
+      console.log(`Auth state - User: ${user?.id}, Session: ${!!session}, Profile: ${!!profile}, Loading: ${isLoading}`);
       
       if (error) {
         setStatus("error");
         setMessage(`Authorization error: ${error}`);
+        toast.error("Authorization failed", {
+          description: error
+        });
+        setTimeout(() => {
+          navigate("/app/settings?tab=integrations");
+        }, 2000);
         return;
       }
       
       if (!code) {
         setStatus("error");
         setMessage("No authorization code found in the callback URL");
+        toast.error("Connection failed", {
+          description: "No authorization code found"
+        });
+        setTimeout(() => {
+          navigate("/app/settings?tab=integrations");
+        }, 2000);
+        return;
+      }
+
+      if (!rawState) {
+        setStatus("error");
+        setMessage("No state parameter found in the callback URL");
+        toast.error("Connection failed", {
+          description: "Missing state parameter"
+        });
+        setTimeout(() => {
+          navigate("/app/settings?tab=integrations");
+        }, 2000);
         return;
       }
 
       try {
         // Call the Supabase edge function directly with all needed parameters
+        // The edge function expects the raw state parameter (base64 encoded JSON)
         const { data, error: fnError } = await supabase.functions.invoke('facebook-oauth-callback', {
           body: { 
             code, 
-            state: platformState 
+            state: rawState 
           }
         });
         
@@ -56,16 +81,21 @@ const AuthCallback = () => {
         
         console.log(`${platformName} OAuth callback result:`, data);
         
-        setStatus("success");
-        setMessage(`Successfully connected to ${displayPlatform}`);
-        toast.success(`Connected to ${displayPlatform}`, {
-          description: "Your account was successfully connected"
-        });
-        
-        // Redirect after a short delay
-        setTimeout(() => {
-          navigate(`/app/settings?tab=integrations&success=${platformName}_connected`);
-        }, 1500);
+        // Check if the response indicates success
+        if (data && data.success) {
+          setStatus("success");
+          setMessage(`Successfully connected to ${displayPlatform}`);
+          toast.success(`Connected to ${displayPlatform}`, {
+            description: "Your account was successfully connected"
+          });
+          
+          // Redirect after a short delay
+          setTimeout(() => {
+            navigate(`/app/settings?tab=integrations&success=${platformName}_connected`);
+          }, 1500);
+        } else {
+          throw new Error(data?.error || "Unknown error occurred");
+        }
       } catch (err) {
         console.error(`Error calling ${platformName}-oauth-callback:`, err);
         setStatus("error");

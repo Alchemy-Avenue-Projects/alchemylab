@@ -63,7 +63,10 @@ function App() {
               {/* OAuth Callbacks */}
               <Route path="/oauth/callback" element={<OAuthCallback />} />
               
-              {/* Facebook-specific callback route */}
+              {/* Facebook OAuth callback - must be on alchemylab.app domain */}
+              <Route path="/facebook-oauth-callback" element={<AuthCallback />} />
+              
+              {/* Other platform callbacks */}
               <Route path="/api/auth/callback/facebook" element={<AuthCallback />} />
               <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
               

@@ -64,12 +64,13 @@ const IntegrationsTab: React.FC = () => {
   const handleConnect = async (platform: Platform) => {
     try {
       console.log(`[IntegrationsTab] Connecting to ${platform}...`);
-      setConnectingPlatform(platform);
       
       // Add a debug toast to see if this function is being called
       toast.info(`Connecting to ${platform}...`);
       
       // Call connectPlatform directly with the platform
+      // Note: We don't set connectingPlatform state here because the redirect happens immediately
+      // and will unmount this component. The state will be cleared naturally.
       await connectPlatform(platform);
       
       // We don't need to show a success toast here because the page will redirect
@@ -79,7 +80,7 @@ const IntegrationsTab: React.FC = () => {
       toast.error("Connection Failed", {
         description: `Failed to connect to ${platform}. Please try again.`
       });
-      // Reset the connecting platform state
+      // Reset the connecting platform state in case of error (though redirect should happen)
       setConnectingPlatform(null);
     }
   };

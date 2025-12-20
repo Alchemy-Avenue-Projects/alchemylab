@@ -2,6 +2,7 @@
 import { ProductBriefFormData, InputChangeParams, ToggleAccountParams, SelectAllAccountsParams } from "../types";
 import { fetchProductBriefAccounts } from "../api/productBriefApi";
 import { PlatformConnection } from "@/types/platforms";
+import { getPlatformConnectionIdFromAdAccount } from "@/services/platforms/adAccountSync";
 
 export const createEmptyProduct = (): ProductBriefFormData => ({
   name: "",
@@ -13,13 +14,38 @@ export const createEmptyProduct = (): ProductBriefFormData => ({
 
 export const mapBriefToFormData = async (brief: any): Promise<ProductBriefFormData> => {
   // Fetch selected accounts for this brief
+  // The DB stores ad_account_id, but the UI uses platform_connection.id
+  // So we need to map ad_account_id -> platform_connection.id
   let selectedAccounts: string[] = [];
   if (brief.id) {
     try {
       const accounts = await fetchProductBriefAccounts(brief.id);
-      selectedAccounts = accounts.map((account: any) => account.ad_account_id);
+      
+      if (accounts && accounts.length > 0) {
+        // Map each ad_account_id to platform_connection.id in parallel
+        // Use Promise.allSettled to handle individual failures gracefully
+        const mappedResults = await Promise.allSettled(
+          accounts.map(async (account: any) => {
+            try {
+              const platformConnectionId = await getPlatformConnectionIdFromAdAccount(account.ad_account_id);
+              return platformConnectionId;
+            } catch (error) {
+              console.error(`Error mapping ad_account ${account.ad_account_id}:`, error);
+              return null;
+            }
+          })
+        );
+        
+        // Extract successful mappings
+        selectedAccounts = mappedResults
+          .filter((result): result is PromiseFulfilledResult<string | null> => 
+            result.status === 'fulfilled' && result.value !== null
+          )
+          .map(result => result.value as string);
+      }
     } catch (error) {
       console.error("Error fetching accounts for brief:", brief.id, error);
+      // Continue with empty selectedAccounts if fetch fails
     }
   }
   

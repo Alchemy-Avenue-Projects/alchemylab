@@ -33,14 +33,47 @@ export const useProductBriefService = () => {
       if (productBriefs && productBriefs.length > 0) {
         console.log("Found product briefs:", productBriefs.length);
         // For each product brief, get its associated accounts
-        const productsWithAccounts = await Promise.all(
+        // Use Promise.allSettled to handle partial failures gracefully
+        const productsWithAccounts = await Promise.allSettled(
           productBriefs.map(async (brief) => {
-            const formData = await mapBriefToFormData(brief);
-            return formData;
+            try {
+              const formData = await mapBriefToFormData(brief);
+              return formData;
+            } catch (error) {
+              console.error(`Error mapping brief ${brief.id}:`, error);
+              // Return a basic form data even if account mapping fails
+              return {
+                id: brief.id,
+                name: brief.name || "",
+                description: brief.description || "",
+                targetAudience: brief.target_audience || "",
+                targetLocations: brief.target_locations || "",
+                selectedAccounts: [] // Empty accounts if mapping fails
+              };
+            }
           })
         );
         
-        setProducts(productsWithAccounts);
+        // Extract successful results, filter out rejected ones
+        const successfulProducts = productsWithAccounts
+          .filter((result): result is PromiseFulfilledResult<ProductBriefFormData> => 
+            result.status === 'fulfilled'
+          )
+          .map(result => result.value);
+        
+        if (successfulProducts.length > 0) {
+          setProducts(successfulProducts);
+        } else {
+          // If all failed, still show the briefs without accounts
+          setProducts(productBriefs.map(brief => ({
+            id: brief.id,
+            name: brief.name || "",
+            description: brief.description || "",
+            targetAudience: brief.target_audience || "",
+            targetLocations: brief.target_locations || "",
+            selectedAccounts: []
+          })));
+        }
       } else {
         console.log("No product briefs found, using default empty brief");
         setProducts([createEmptyProduct()]);
