@@ -5,19 +5,28 @@ import { ProductBriefFormData } from "../types";
 export const fetchProductBriefsFromApi = async (userId: string) => {
   console.log("Fetching product briefs for user:", userId);
   
-  const { data: productBriefs, error } = await supabase
-    .from('product_briefs')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  try {
+    const { data: productBriefs, error } = await supabase
+      .from('product_briefs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching product briefs:", error);
+      // Provide more detailed error information
+      throw new Error(`Failed to fetch product briefs: ${error.message} (Code: ${error.code})`);
+    }
     
-  if (error) {
-    console.error("Error fetching product briefs:", error);
-    throw error;
+    console.log("Product briefs fetched:", productBriefs);
+    return productBriefs || [];
+  } catch (error) {
+    // Re-throw with additional context
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Unexpected error fetching product briefs: ${String(error)}`);
   }
-  
-  console.log("Product briefs fetched:", productBriefs);
-  return productBriefs;
 };
 
 export const fetchProductBriefAccounts = async (briefId: string) => {

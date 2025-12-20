@@ -122,9 +122,19 @@ async function handler(req: Request): Promise<Response> {
     if (dbErr) throw dbErr;
 
     // 6) redirect back to UI
+    // Get frontend URL from environment or use first allowed origin
+    const frontendUrl = Deno.env.get("FRONTEND_URL") || ALLOWED_ORIGINS[0];
+    const redirectUrl = `${frontendUrl}/app/settings?success=facebook_connected`;
+    
+    const origin = req.headers.get('Origin') || undefined;
+    const corsHeaders = getCors(origin);
+    
     return new Response(null, {
       status: 302,
-      headers: { ...cors, Location: "https://alchemylab.app/app/settings?success=facebook_connected" },
+      headers: { 
+        ...corsHeaders, 
+        Location: redirectUrl 
+      },
     });
 
   } catch (e) {

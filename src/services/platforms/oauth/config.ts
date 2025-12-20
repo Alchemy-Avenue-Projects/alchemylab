@@ -20,11 +20,36 @@ export const getOrigin = (): string => {
   return origin;
 };
 
+// Extract project ref from Supabase URL
+// URL format: https://<project-ref>.supabase.co
+const getSupabaseProjectRef = (): string | null => {
+  const supabaseUrl = env.supabase.url;
+  if (!supabaseUrl) return null;
+  
+  try {
+    const url = new URL(supabaseUrl);
+    // Extract project ref from hostname (e.g., "abc123.supabase.co" -> "abc123")
+    const hostnameParts = url.hostname.split('.');
+    if (hostnameParts.length >= 2 && hostnameParts[1] === 'supabase') {
+      return hostnameParts[0];
+    }
+  } catch (error) {
+    console.error('Error parsing Supabase URL:', error);
+  }
+  
+  return null;
+};
+
 // Get the appropriate redirect URI based on platform
 export const getRedirectUri = (platform: string): string => {
-  // For Facebook, the redirect URI must match exactly what's registered in the Facebook Developer Console
+  // For Facebook, use Supabase edge function URL instead of VPS
   if (platform === 'facebook') {
-    // Make sure this matches exactly what's registered in Facebook Developer Console
+    const projectRef = getSupabaseProjectRef();
+    if (projectRef) {
+      return `https://${projectRef}.supabase.co/functions/v1/facebook-oauth-callback`;
+    }
+    // Fallback to VPS if project ref cannot be determined
+    console.warn('Could not determine Supabase project ref, falling back to VPS URL');
     return 'https://api.alchemylab.app/facebook-oauth-callback';
   }
   

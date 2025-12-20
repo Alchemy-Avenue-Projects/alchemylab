@@ -22,7 +22,8 @@ const ProductBriefTab: React.FC = () => {
     handleInputChange,
     handleAccountToggle,
     handleSelectAll,
-    handleSave
+    handleSave,
+    refetch
   } = useProductBriefService();
 
   useEffect(() => {
@@ -36,7 +37,7 @@ const ProductBriefTab: React.FC = () => {
       const timeoutId = setTimeout(() => {
         console.log("Loading timeout reached for product briefs");
         setLoadingTimedOut(true);
-      }, 3000);
+      }, 10000); // Increased from 3s to 10s
       
       return () => clearTimeout(timeoutId);
     }
@@ -69,14 +70,36 @@ const ProductBriefTab: React.FC = () => {
     );
   }
 
+  const handleRetry = async () => {
+    setLoadingTimedOut(false);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Retry failed:", error);
+      toast({
+        title: "Retry Failed",
+        description: "Failed to reload product briefs. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const renderLoadingWarning = () => {
     if (loadingTimedOut && isLoading) {
       return (
         <Alert variant="warning" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Loading Timeout</AlertTitle>
-          <AlertDescription>
-            Loading product briefs is taking longer than expected. Showing available data.
+          <AlertDescription className="flex items-center justify-between">
+            <span>Loading product briefs is taking longer than expected. This may indicate a connection issue.</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRetry}
+              className="ml-4"
+            >
+              Retry
+            </Button>
           </AlertDescription>
         </Alert>
       );

@@ -66,11 +66,8 @@ export const useProductBriefService = () => {
   useEffect(() => {
     console.log("Auth state changed, user:", user?.id);
     if (user) {
-      // Add a small delay to ensure auth state is fully resolved
-      const timer = setTimeout(() => {
-        fetchProductBriefs();
-      }, 500);
-      return () => clearTimeout(timer);
+      // Fetch immediately - no delay needed as auth state is already resolved
+      fetchProductBriefs();
     } else {
       // If no user, exit loading state to avoid infinite spinner
       setIsLoading(false);
@@ -146,6 +143,7 @@ export const useProductBriefService = () => {
     handleInputChange,
     handleAccountToggle,
     handleSelectAll,
-    handleSave
+    handleSave,
+    refetch: fetchProductBriefs
   };
 };
