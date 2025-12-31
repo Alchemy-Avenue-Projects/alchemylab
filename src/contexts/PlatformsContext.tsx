@@ -14,7 +14,7 @@ interface PlatformsContextType {
   connections: PlatformConnection[];
   isLoading: boolean;
   error: string | null;
-  connectPlatform: (platform: Platform) => Promise<void>;
+  connectPlatform: (platform: Platform) => Promise<boolean>;
   disconnectPlatform: (connectionId: string) => Promise<void>;
   refreshConnections: () => Promise<void>;
 }
@@ -71,7 +71,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refreshConnections();
   }, [profile?.organization_id]);
 
-const connectPlatform = async (platform: Platform) => {
+const connectPlatform = async (platform: Platform): Promise<boolean> => {
   console.log("[PlatformsContext] connectPlatform() called");
 
   try {
@@ -90,7 +90,7 @@ const connectPlatform = async (platform: Platform) => {
       toast.error("Authentication Required", {
         description: "You need to be logged in to connect platforms"
       });
-      return;
+      return false;
     }
 
     console.log("✅ Valid Supabase session found for user:", currentSession.user.id);
@@ -98,7 +98,7 @@ const connectPlatform = async (platform: Platform) => {
     // Skip OAuth for API key platforms
     if (platform === 'openai' || platform === 'amplitude' || platform === 'mixpanel') {
       window.location.href = `/app/settings?platform=${platform}&modal=api-key`;
-      return;
+      return true;
     }
 
     if (platform === 'facebook') {
@@ -109,7 +109,7 @@ const connectPlatform = async (platform: Platform) => {
           toast.error("Configuration Error", {
             description: "Facebook App ID is not configured"
         });
-        return;
+        return false;
       }
 
         try {
@@ -124,19 +124,21 @@ const connectPlatform = async (platform: Platform) => {
           // Redirect to the OAuth URL
           console.log("🔍 Redirecting to OAuth URL...");
           window.location.href = oauthUrl;
+          return true;
         } catch (err) {
           console.error("❌ Error generating OAuth URL:", err);
           toast.error("Connection Error", {
             description: "Failed to generate authentication URL"
         });
+        return false;
       }
-      return;
     }
 
     // Handle other platforms as needed
       toast.error("Not Implemented", {
         description: `${platform} integration is not implemented yet.`
       });
+      return false;
 
   } catch (err: any) {
     console.error(`❌ General error during connectPlatform(${platform}):`, err);
@@ -144,6 +146,7 @@ const connectPlatform = async (platform: Platform) => {
     toast.error("Connection Error", {
       description: `Failed to connect to ${platform}: ${err.message}`
     });
+    return false;
   }
 };
   

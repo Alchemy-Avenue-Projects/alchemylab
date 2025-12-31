@@ -27,6 +27,8 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log(`AlchemyLab v${__APP_VERSION__} (Built: ${__BUILD_TIME__})`);
+    
     // Simulate loading delay
     const timer = setTimeout(() => {
       setLoading(false);

@@ -1,0 +1,177 @@
+# AlchemyLab — .cursorrules
+# Purpose:
+# A web-based "Command Center" for digital marketing:
+# - Connect multiple ad accounts (Facebook, Google, TikTok, LinkedIn, etc.)
+# - Pull performance data near-real-time (respecting rate limits)
+# - Aggregate analytics sources (GA4, Mixpanel, Amplitude, etc.)
+# - Generate and store AI insights (daily + on-demand) to learn what to repeat and what to avoid
+# - Provide AI ad generation (text now; image/video later) + automatic variation generation
+# - ASO capabilities, reporting, and marketing account audits (agency pre-sales use case)
+#
+# Product constraints:
+# - Web only (for now)
+# - Tier limits:
+#   Starter: max 3 connected ad accounts
+#   Pro: max 7 connected ad accounts
+#   Enterprise: unlimited
+# - Compliance:
+#   GDPR data export + delete endpoints
+#   SOC2-oriented engineering hygiene (access control, logging, change tracking)
+
+───────────────────────────────────────────────────────────────────────────────
+1) General behavior rules for Cursor
+───────────────────────────────────────────────────────────────────────────────
+- Do NOT invent files, code, schemas, env vars, or tables. Always open and reference actual repo files.
+- When proposing changes, always specify EXACT file paths and the precise diff-like edits.
+- Prefer small, iterative patches that compile and keep the app working end-to-end.
+- Never “hand-wave” critical logic (OAuth, RLS, token storage, tier enforcement). Implement fully.
+
+───────────────────────────────────────────────────────────────────────────────
+2) Tech stack expectations & coding standards
+───────────────────────────────────────────────────────────────────────────────
+- Frontend: TypeScript + React (assume Vite) with a clean component structure.
+- Backend: Supabase (Postgres + Auth + RLS) + Supabase Edge Functions (Deno).
+- Use supabase-js v2 patterns.
+- Style:
+  - TypeScript strictness: avoid `any`, prefer typed DTOs and helpers.
+  - No silent failures: always log + surface user-friendly errors (toast/UI).
+  - Keep functions small; move platform-specific logic into platform services.
+
+───────────────────────────────────────────────────────────────────────────────
+3) Architecture principles
+───────────────────────────────────────────────────────────────────────────────
+- Single source of truth is Supabase Postgres.
+- "Connections" are stored server-side (Edge Functions) after OAuth callbacks.
+- Do NOT store platform access tokens in localStorage. Never log secrets.
+- All writes must respect RLS and/or service role usage only inside Edge Functions.
+- Keep ingestion modular:
+  - connectors/<platform>/ (auth, fetch, normalize)
+  - services/ (orchestrators, schedulers, scoring)
+  - db/ (types, queries)
+
+───────────────────────────────────────────────────────────────────────────────
+4) OAuth integrations — required pattern (esp. Facebook)
+───────────────────────────────────────────────────────────────────────────────
+- OAuth initiation:
+  - Frontend generates OAuth URL.
+  - `state` must be base64(JSON) containing:
+    - userId: Supabase user id (UUID)
+    - jwt: Supabase access token (JWT)
+    - timestamp: Date.now()
+    - nonce: random UUID
+  - Always URL-encode `state`.
+- OAuth callback (Edge Function):
+  - Must decode and validate state:
+    - base64 decode -> JSON parse
+    - timestamp freshness (<= 5 min)
+    - nonce present
+    - jwt present
+  - Verify jwt via `supabase.auth.getUser(jwt)` (service role client).
+  - Resolve organization context:
+    - user must be linked to an organization (e.g., via profile/organization_membership).
+    - If missing, return a clear error and DO NOT write tokens.
+  - Exchange code for access token using the SAME redirect_uri configured in Facebook.
+  - Store token in `platform_connections` (or equivalent):
+    - Use organization_id (not user id) as owner key.
+    - Include connected_by user id.
+    - Persist token_expiry (when available).
+  - Redirect user back to UI settings success URL.
+- Database constraints:
+  - If using `upsert`, ensure a UNIQUE constraint exists matching `onConflict`.
+  - Never guess constraints—verify schema, then add migration SQL if needed.
+
+───────────────────────────────────────────────────────────────────────────────
+5) Tier enforcement (Starter/Pro/Enterprise)
+───────────────────────────────────────────────────────────────────────────────
+- Enforce tier limits in BOTH:
+  - Frontend (disable connect button when limit reached; explain upgrade)
+  - Backend (Edge Function must reject storing new connections if tier limit exceeded)
+- Store plan/tier at org level (organizations table or subscription table).
+- When implementing, ensure the limit counts “connected ad accounts” (not just platforms):
+  - Platform can have multiple accounts under it; represent them explicitly.
+
+───────────────────────────────────────────────────────────────────────────────
+6) Data ingestion: near-real-time pulls
+───────────────────────────────────────────────────────────────────────────────
+- Goals:
+  - Pull frequently (minutes) without breaking rate limits.
+  - Use incremental sync with cursors and time windows.
+  - Normalize metrics into a canonical schema for cross-platform comparison.
+- Required layers:
+  1) Raw ingestion tables (store original payload + metadata + timestamps)
+  2) Normalized metrics tables (standard columns: spend, impressions, clicks, conversions, revenue, etc.)
+  3) Aggregations for dashboards (materialized views or cached tables)
+- Every ingestion run must store:
+  - started_at, finished_at, status, error_message, platform, org_id, account_id
+  - request_id/correlation_id for debugging
+- Never block UI on ingestion; show last_sync_at + status.
+
+───────────────────────────────────────────────────────────────────────────────
+7) AI Insights & Generation
+───────────────────────────────────────────────────────────────────────────────
+- AI Insights:
+  - Support daily and on-demand insights.
+  - Must be stored in a table (e.g. ai_insights) with:
+    - org_id, platform/account scope, time window, insight text, “good/bad”, recommended action,
+      tags, confidence, created_at, model metadata, source references (campaign/ad/creative ids).
+  - Create a "memory" effect:
+    - When generating new insights, query recent insights and avoid repeating “bad ideas” and
+      reinforce “good patterns”.
+- AI Ad generation:
+  - Start with text generation; expand to image/video later.
+  - Must store prompts + outputs + variations + approval status.
+  - Never store secrets in prompts; redact tokens and personal data.
+
+───────────────────────────────────────────────────────────────────────────────
+8) ASO + Reporting + Account Audit modules
+───────────────────────────────────────────────────────────────────────────────
+- ASO:
+  - Metadata generation workflows, keyword suggestions, asset checklists.
+  - Persist generated outputs with timestamps and app/package identifiers.
+- Reporting:
+  - Generate reports (web view + export later).
+  - Provide per-platform and cross-platform summaries.
+- Account Audit (agency pre-sales):
+  - Pull structured diagnostics (naming conventions, budget allocation, creative fatigue,
+    tracking completeness, funnel issues, anomalies).
+  - Output both a score and a narrative report, stored for later reference.
+
+───────────────────────────────────────────────────────────────────────────────
+9) Security & compliance (GDPR + SOC2 posture)
+───────────────────────────────────────────────────────────────────────────────
+- GDPR endpoints required:
+  - GET /gdpr/export: exports all user/org-related data (portable format)
+  - DELETE /gdpr/account: deletes/anonymizes PII with safe retention for audit logs
+- Access control:
+  - Use RLS everywhere; verify all table policies.
+  - Edge Functions using service role must still enforce org membership explicitly.
+- Token handling:
+  - Tokens stored only server-side.
+  - Never log token values; mask in logs.
+- Auditability:
+  - Keep change logs for critical entities (connections, settings, permissions).
+  - Every sensitive action should have a traceable actor (user_id) and timestamp.
+
+───────────────────────────────────────────────────────────────────────────────
+10) Logging, errors, and UX expectations
+───────────────────────────────────────────────────────────────────────────────
+- Add structured logs in Edge Functions:
+  - correlation_id, org_id, user_id, platform, action, status
+- Frontend:
+  - Always show actionable error messages (not just “Error”).
+  - OAuth UX:
+    - show “Redirecting…” toast
+    - on return, show success message and refresh connections list.
+
+───────────────────────────────────────────────────────────────────────────────
+11) Delivery expectations when Cursor edits code
+───────────────────────────────────────────────────────────────────────────────
+- Provide a single, coherent implementation:
+  - If you touch OAuth initiation, also update callback + schema constraints as needed.
+- Always include:
+  - updated types
+  - minimal tests or sanity checks (where tests exist)
+  - clear migration SQL if schema changes are required
+- Never leave the repo in a broken state.
+
+# End of .cursorrules

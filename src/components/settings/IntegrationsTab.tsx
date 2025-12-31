@@ -73,7 +73,18 @@ const IntegrationsTab: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       // Call connectPlatform directly with the platform
-      await connectPlatform(platform);
+      const redirected = await connectPlatform(platform);
+      
+      // If we didn't redirect, we need to reset the state
+      if (!redirected) {
+        setConnectingPlatform(null);
+      } else {
+        // Fallback: if redirect doesn't happen within 5 seconds, reset state.
+        // This handles the "silent failure" case without flickering immediately.
+        setTimeout(() => {
+          setConnectingPlatform(null);
+        }, 5000);
+      }
       
       // We don't need to show a success toast here because the page will redirect
       // The success toast will be shown after the redirect
@@ -82,10 +93,6 @@ const IntegrationsTab: React.FC = () => {
       toast.error("Connection Failed", {
         description: `Failed to connect to ${platform}. Please try again.`
       });
-    } finally {
-      // Bug 1 Fix: Always reset the connecting platform state
-      // This ensures we don't get stuck in loading state if connectPlatform returns early
-      // without redirecting, or if an error occurred.
       setConnectingPlatform(null);
     }
   };
