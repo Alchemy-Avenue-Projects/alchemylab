@@ -1,15 +1,15 @@
 
 import React, { useState } from "react";
-import { 
-  Search, 
-  Plus, 
-  Filter, 
-  ArrowUpDown, 
-  MoreHorizontal, 
-  ExternalLink, 
-  Edit, 
-  Trash, 
-  Pause, 
+import {
+  Search,
+  Plus,
+  Filter,
+  ArrowUpDown,
+  MoreHorizontal,
+  ExternalLink,
+  Edit,
+  Trash,
+  Pause,
   Play,
   Download,
   Eye
@@ -75,12 +75,12 @@ import { useCampaigns, CampaignWithAccount } from "@/hooks/useCampaigns";
 import { useAdAccounts } from "@/hooks/useAdAccounts";
 import { CampaignForm } from "@/components/campaigns/CampaignForm";
 import { AdPreview } from "@/components/campaigns/AdPreview";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Ad } from "@/types/database";
 
 const Campaigns: React.FC = () => {
-  const { 
-    campaigns, 
+  const {
+    campaigns,
     isLoading,
     filters,
     setFilters,
@@ -92,15 +92,15 @@ const Campaigns: React.FC = () => {
     isUpdating,
     isDeleting
   } = useCampaigns();
-  
+
   const { adAccounts, isLoading: isLoadingAdAccounts } = useAdAccounts();
-  const { toast } = useToast();
-  
+
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<CampaignWithAccount | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [campaignToDelete, setCampaignToDelete] = useState<string | null>(null);
-  
+
   const [previewCampaign, setPreviewCampaign] = useState<CampaignWithAccount | null>(null);
   const [previewAds, setPreviewAds] = useState<Ad[]>([]);
   const [loadingAds, setLoadingAds] = useState(false);
@@ -115,7 +115,7 @@ const Campaigns: React.FC = () => {
 
   const handleUpdateCampaign = (data: any) => {
     if (!editingCampaign) return;
-    
+
     updateCampaign({
       id: editingCampaign.id,
       ...data
@@ -128,7 +128,7 @@ const Campaigns: React.FC = () => {
 
   const handleDeleteCampaign = () => {
     if (!campaignToDelete) return;
-    
+
     deleteCampaign(campaignToDelete, {
       onSuccess: () => {
         setShowDeleteDialog(false);
@@ -144,11 +144,7 @@ const Campaigns: React.FC = () => {
       const ads = await fetchAdsForCampaign(campaign.id);
       setPreviewAds(ads);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load ads for this campaign",
-        variant: "destructive"
-      });
+      toast.error("Failed to load ads for this campaign");
     } finally {
       setLoadingAds(false);
     }
@@ -187,7 +183,7 @@ const Campaigns: React.FC = () => {
                   Fill out the form below to create a new advertising campaign.
                 </DialogDescription>
               </DialogHeader>
-              
+
               {isLoadingAdAccounts ? (
                 <div className="py-8 flex items-center justify-center">
                   <div className="animate-spin h-6 w-6 border-2 border-alchemy-600 border-t-transparent rounded-full"></div>
@@ -198,17 +194,17 @@ const Campaigns: React.FC = () => {
                   <p className="text-sm">You need to connect an ad account before creating campaigns.</p>
                 </div>
               ) : (
-                <CampaignForm 
-                  onSubmit={handleCreateCampaign} 
-                  adAccounts={adAccounts} 
-                  isLoading={isCreating} 
+                <CampaignForm
+                  onSubmit={handleCreateCampaign}
+                  adAccounts={adAccounts}
+                  isLoading={isCreating}
                 />
               )}
             </DialogContent>
           </Dialog>
         </div>
       </div>
-      
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>All Campaigns</CardTitle>
@@ -232,10 +228,10 @@ const Campaigns: React.FC = () => {
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="flex items-center space-x-2 w-full md:w-auto">
-              <Select 
-                value={filters.platform} 
+              <Select
+                value={filters.platform}
                 onValueChange={(value) => handleFilterChange('platform', value)}
               >
                 <SelectTrigger className="w-full md:w-[180px]">
@@ -251,9 +247,9 @@ const Campaigns: React.FC = () => {
                   <SelectItem value="pinterest">Pinterest</SelectItem>
                 </SelectContent>
               </Select>
-              
-              <Select 
-                value={filters.status} 
+
+              <Select
+                value={filters.status}
                 onValueChange={(value) => handleFilterChange('status', value)}
               >
                 <SelectTrigger className="w-full md:w-[180px]">
@@ -266,13 +262,13 @@ const Campaigns: React.FC = () => {
                   <SelectItem value="ended">Ended</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Button variant="outline" size="icon">
                 <Download className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          
+
           <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
@@ -325,14 +321,14 @@ const Campaigns: React.FC = () => {
                       </TableCell>
                       <TableCell>{campaign.ad_accounts?.platform || "Unknown"}</TableCell>
                       <TableCell>
-                        <Badge 
+                        <Badge
                           variant={
-                            campaign.status === "active" ? "outline" : 
-                            campaign.status === "paused" ? "secondary" : "default"
-                          } 
+                            campaign.status === "active" ? "outline" :
+                              campaign.status === "paused" ? "secondary" : "default"
+                          }
                           className={
-                            campaign.status === "active" ? "text-green-500 border-green-200" : 
-                            campaign.status === "ended" ? "text-blue-500 border-blue-200" : ""
+                            campaign.status === "active" ? "text-green-500 border-green-200" :
+                              campaign.status === "ended" ? "text-blue-500 border-blue-200" : ""
                           }
                         >
                           {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
@@ -341,7 +337,7 @@ const Campaigns: React.FC = () => {
                       <TableCell>${campaign.budget ? campaign.budget.toFixed(2) : '0.00'}</TableCell>
                       <TableCell>{format(new Date(campaign.start_date), "MMM d, yyyy")}</TableCell>
                       <TableCell>
-                        {campaign.end_date 
+                        {campaign.end_date
                           ? format(new Date(campaign.end_date), "MMM d, yyyy")
                           : "Not set"
                         }
@@ -396,7 +392,7 @@ const Campaigns: React.FC = () => {
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 {campaign.status === "active" ? (
-                                  <button 
+                                  <button
                                     className="flex items-center w-full"
                                     onClick={() => updateCampaign({ id: campaign.id, status: "paused" })}
                                   >
@@ -404,7 +400,7 @@ const Campaigns: React.FC = () => {
                                     Pause
                                   </button>
                                 ) : campaign.status === "paused" ? (
-                                  <button 
+                                  <button
                                     className="flex items-center w-full"
                                     onClick={() => updateCampaign({ id: campaign.id, status: "active" })}
                                   >
@@ -415,7 +411,7 @@ const Campaigns: React.FC = () => {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem asChild>
-                                <button 
+                                <button
                                   className="flex items-center w-full text-red-600"
                                   onClick={() => {
                                     setCampaignToDelete(campaign.id);
@@ -440,8 +436,8 @@ const Campaigns: React.FC = () => {
       </Card>
 
       {/* Edit Campaign Dialog */}
-      <Dialog 
-        open={!!editingCampaign} 
+      <Dialog
+        open={!!editingCampaign}
         onOpenChange={(open) => !open && setEditingCampaign(null)}
       >
         <DialogContent className="sm:max-w-[550px]">
@@ -451,13 +447,13 @@ const Campaigns: React.FC = () => {
               Update the details of your campaign.
             </DialogDescription>
           </DialogHeader>
-          
+
           {editingCampaign && (
-            <CampaignForm 
-              onSubmit={handleUpdateCampaign} 
-              adAccounts={adAccounts} 
-              initialData={editingCampaign} 
-              isLoading={isUpdating} 
+            <CampaignForm
+              onSubmit={handleUpdateCampaign}
+              adAccounts={adAccounts}
+              initialData={editingCampaign}
+              isLoading={isUpdating}
             />
           )}
         </DialogContent>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, BrowserRouter } from 'react-router-dom';
-import { Toaster } from "@/components/ui/toaster";
+
 import { AuthProvider } from './contexts/AuthContext';
 import { PlatformsProvider } from './contexts/PlatformsContext';
 import Dashboard from './pages/Dashboard';
@@ -28,7 +28,7 @@ function App() {
 
   useEffect(() => {
     console.log(`AlchemyLab v${__APP_VERSION__} (Built: ${__BUILD_TIME__})`);
-    
+
     // Simulate loading delay
     const timer = setTimeout(() => {
       setLoading(false);
@@ -40,44 +40,43 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <PlatformsProvider>
-          <Toaster />
           <SonnerToaster />
           <Routes>
-              {/* Landing Routes */}
-              <Route path="/" element={<Homepage />} />
-              <Route path="/features" element={<Features />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/auth" element={<Auth />} />
-              
-              {/* App Routes */}
-              <Route path="/app" element={<AppLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="campaigns" element={<Campaigns />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="ai-insights" element={<AIInsights />} />
-                <Route path="media" element={<Media />} />
-                <Route path="creator" element={<Creator />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="team" element={<Team />} />
-              </Route>
+            {/* Landing Routes */}
+            <Route path="/" element={<Homepage />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/auth" element={<Auth />} />
 
-              {/* OAuth Callbacks */}
-              <Route path="/oauth/callback" element={<OAuthCallback />} />
-              
-              {/* Facebook OAuth callback - must be on alchemylab.app domain */}
-              <Route path="/facebook-oauth-callback" element={<AuthCallback />} />
-              
-              {/* Other platform callbacks */}
-              <Route path="/api/auth/callback/facebook" element={<AuthCallback />} />
-              <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
-              
-              {/* Catch All - 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </PlatformsProvider>
-        </AuthProvider>
-      </BrowserRouter>
+            {/* App Routes */}
+            <Route path="/app" element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="ai-insights" element={<AIInsights />} />
+              <Route path="media" element={<Media />} />
+              <Route path="creator" element={<Creator />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="team" element={<Team />} />
+            </Route>
+
+            {/* OAuth Callbacks */}
+            <Route path="/oauth/callback" element={<OAuthCallback />} />
+
+            {/* Facebook OAuth callback - must be on alchemylab.app domain */}
+            <Route path="/facebook-oauth-callback" element={<AuthCallback />} />
+
+            {/* Other platform callbacks */}
+            <Route path="/api/auth/callback/facebook" element={<AuthCallback />} />
+            <Route path="/api/auth/callback/:provider" element={<AuthCallback />} />
+
+            {/* Catch All - 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </PlatformsProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

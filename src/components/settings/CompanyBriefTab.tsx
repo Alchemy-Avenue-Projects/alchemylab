@@ -9,12 +9,12 @@ import { PlusCircle, Save, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { usePlatforms } from "@/contexts/PlatformsContext";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const CompanyBriefTab: React.FC = () => {
   const { connections } = usePlatforms();
-  const { toast } = useToast();
-  
+
+
   const [companies, setCompanies] = useState([
     {
       id: '1',
@@ -45,7 +45,7 @@ const CompanyBriefTab: React.FC = () => {
   };
 
   const handleInputChange = (id: string, field: string, value: string) => {
-    setCompanies(companies.map(company => 
+    setCompanies(companies.map(company =>
       company.id === id ? { ...company, [field]: value } : company
     ));
   };
@@ -56,7 +56,7 @@ const CompanyBriefTab: React.FC = () => {
         const selectedAccounts = company.selectedAccounts.includes(accountId)
           ? company.selectedAccounts.filter(id => id !== accountId)
           : [...company.selectedAccounts, accountId];
-        
+
         return { ...company, selectedAccounts };
       }
       return company;
@@ -76,10 +76,7 @@ const CompanyBriefTab: React.FC = () => {
   };
 
   const handleSave = () => {
-    toast({
-      title: "Company briefs saved",
-      description: `Saved ${companies.length} company ${companies.length === 1 ? 'brief' : 'briefs'}.`
-    });
+    toast.success(`Saved ${companies.length} company ${companies.length === 1 ? 'brief' : 'briefs'}.`);
   };
 
   return (
@@ -96,8 +93,8 @@ const CompanyBriefTab: React.FC = () => {
                 />
               </CardTitle>
               {companies.length > 1 && (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={() => handleRemoveCompany(company.id)}
                 >
@@ -120,7 +117,7 @@ const CompanyBriefTab: React.FC = () => {
                   onChange={(e) => handleInputChange(company.id, 'description', e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Target Audience</Label>
                 <Textarea
@@ -129,7 +126,7 @@ const CompanyBriefTab: React.FC = () => {
                   onChange={(e) => handleInputChange(company.id, 'targetAudience', e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Target Locations</Label>
                 <Textarea
@@ -139,22 +136,22 @@ const CompanyBriefTab: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <Separator />
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-base">Apply to Ad Accounts</Label>
                 <div className="space-x-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => handleSelectAll(company.id, true)}
                   >
                     Select All
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => handleSelectAll(company.id, false)}
                   >
@@ -162,17 +159,17 @@ const CompanyBriefTab: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="grid gap-3">
                 {connections.length > 0 ? (
                   connections.map(connection => (
                     <div key={connection.id} className="flex items-center space-x-2">
-                      <Checkbox 
+                      <Checkbox
                         id={`${company.id}-${connection.id}`}
                         checked={company.selectedAccounts.includes(connection.id)}
                         onCheckedChange={() => handleAccountToggle(company.id, connection.id)}
                       />
-                      <label 
+                      <label
                         htmlFor={`${company.id}-${connection.id}`}
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
@@ -190,16 +187,16 @@ const CompanyBriefTab: React.FC = () => {
           </CardContent>
         </Card>
       ))}
-      
-      <Button 
-        variant="outline" 
-        className="w-full py-6 border-dashed flex items-center justify-center gap-2" 
+
+      <Button
+        variant="outline"
+        className="w-full py-6 border-dashed flex items-center justify-center gap-2"
         onClick={handleAddCompany}
       >
         <PlusCircle className="h-4 w-4" />
         Add Another Company
       </Button>
-      
+
       <div className="flex justify-end">
         <Button className="alchemy-gradient" onClick={handleSave}>
           <Save className="h-4 w-4 mr-2" />

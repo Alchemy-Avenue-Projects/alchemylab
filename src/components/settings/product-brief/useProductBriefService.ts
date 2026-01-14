@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProductBriefFormData } from "./types";
 import { createEmptyProduct, mapBriefToFormData, handleInputChangeHelper, handleAccountToggleHelper, handleSelectAllHelper } from "./utils/productBriefUtils";
@@ -9,7 +9,7 @@ import { useSaveProductBrief } from "./hooks/useSaveProductBrief";
 import { PlatformConnection } from "@/types/platforms";
 
 export const useProductBriefService = () => {
-  const { toast } = useToast();
+
   const { user } = useAuth();
   const [products, setProducts] = useState<ProductBriefFormData[]>([createEmptyProduct()]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,13 +23,13 @@ export const useProductBriefService = () => {
       setHasAttemptedFetch(true);
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       console.log("Fetching product briefs for user:", user.id);
       const productBriefs = await fetchProductBriefsFromApi(user.id);
-      
+
       if (productBriefs && productBriefs.length > 0) {
         console.log("Found product briefs:", productBriefs.length);
         // For each product brief, get its associated accounts
@@ -53,14 +53,14 @@ export const useProductBriefService = () => {
             }
           })
         );
-        
+
         // Extract successful results, filter out rejected ones
         const successfulProducts = productsWithAccounts
-          .filter((result): result is PromiseFulfilledResult<ProductBriefFormData> => 
+          .filter((result): result is PromiseFulfilledResult<ProductBriefFormData> =>
             result.status === 'fulfilled'
           )
           .map(result => result.value);
-        
+
         if (successfulProducts.length > 0) {
           setProducts(successfulProducts);
         } else {
@@ -80,11 +80,7 @@ export const useProductBriefService = () => {
       }
     } catch (error) {
       console.error('Error fetching product briefs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load product briefs.",
-        variant: "destructive"
-      });
+      toast.error("Failed to load product briefs.");
       // Set default state even if there's an error
       setProducts([createEmptyProduct()]);
     } finally {
@@ -130,39 +126,25 @@ export const useProductBriefService = () => {
 
   const handleSave = async (connections: PlatformConnection[], productIndex?: number) => {
     if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to save product briefs.",
-        variant: "destructive"
-      });
+      toast.error("You must be logged in to save product briefs.");
       return;
     }
-    
+
     try {
       const result = await handleSaveProduct(products, connections, user?.id, productIndex);
-      
+
       if (result) {
         setProducts(result.updatedProducts);
-        
+
         if (productIndex !== undefined) {
-          toast({
-            title: "Success",
-            description: `Product brief "${products[productIndex].name}" saved successfully.`
-          });
+          toast.success(`Product brief "${products[productIndex].name}" saved successfully.`);
         } else {
-          toast({
-            title: "Success",
-            description: `All product briefs saved successfully.`
-          });
+          toast.success(`All product briefs saved successfully.`);
         }
       }
     } catch (error) {
       console.error('Error saving product briefs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save product briefs.",
-        variant: "destructive"
-      });
+      toast.error("Failed to save product briefs.");
     }
   };
 

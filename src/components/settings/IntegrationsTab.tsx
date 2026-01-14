@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Platform } from "@/types/platforms";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlatforms } from "@/contexts/PlatformsContext";
@@ -35,21 +34,20 @@ const IntegrationsTab: React.FC = () => {
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
-  const { toast: uiToast } = useToast();
   const { profile } = useAuth();
 
   useEffect(() => {
     // Check if we've been redirected with platform and modal params
     const platform = searchParams.get('platform') as Platform | null;
     const modal = searchParams.get('modal');
-    
+
     if (platform && modal === 'api-key') {
       setCurrentPlatform(platform);
       setApiKeyModalOpen(true);
       // Clear the query params
       setSearchParams({});
     }
-    
+
     // Check if we have success param
     const success = searchParams.get('success');
     if (success) {
@@ -65,16 +63,16 @@ const IntegrationsTab: React.FC = () => {
     try {
       console.log(`[IntegrationsTab] Connecting to ${platform}...`);
       setConnectingPlatform(platform);
-      
+
       // Add a debug toast to see if this function is being called
       toast.info(`Connecting to ${platform}...`);
-      
+
       // Bug 2 Fix: Allow UI to update before proceeding with potential redirect
       await new Promise(resolve => setTimeout(resolve, 0));
 
       // Call connectPlatform directly with the platform
       const redirected = await connectPlatform(platform);
-      
+
       // If we didn't redirect, we need to reset the state
       if (!redirected) {
         setConnectingPlatform(null);
@@ -85,7 +83,7 @@ const IntegrationsTab: React.FC = () => {
           setConnectingPlatform(null);
         }, 5000);
       }
-      
+
       // We don't need to show a success toast here because the page will redirect
       // The success toast will be shown after the redirect
     } catch (error) {
@@ -113,7 +111,7 @@ const IntegrationsTab: React.FC = () => {
 
   const handleApiKeySubmit = async (apiKey: string) => {
     if (!currentPlatform || !apiKey.trim() || !profile?.organization_id) return;
-    
+
     try {
       // For API key based services, we store the key as the auth_token
       const { error } = await supabase
@@ -126,16 +124,16 @@ const IntegrationsTab: React.FC = () => {
           account_name: `${currentPlatform.charAt(0).toUpperCase() + currentPlatform.slice(1)} API Key`,
           connected: true
         });
-      
+
       if (error) throw error;
-      
+
       toast.success('Connected Successfully', {
         description: `${currentPlatform} has been connected using your API key.`
       });
-      
+
       // Refresh the connections list
       await refreshConnections();
-      
+
       // Close the modal
       setApiKeyModalOpen(false);
       setCurrentPlatform(null);
@@ -160,8 +158,8 @@ const IntegrationsTab: React.FC = () => {
       <div className="p-4 border border-red-200 rounded-md bg-red-50 text-red-800">
         <h3 className="font-medium">Error loading integrations</h3>
         <p>{error}</p>
-        <button 
-          onClick={refreshConnections} 
+        <button
+          onClick={refreshConnections}
           className="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 rounded-md text-sm"
         >
           Try Again
@@ -182,7 +180,7 @@ const IntegrationsTab: React.FC = () => {
         connectingPlatform={connectingPlatform}
         disconnectingId={disconnectingId}
       />
-      
+
       <PlatformCategory
         title="Analytics Integrations"
         description="Connect your analytics platforms to import performance data."
@@ -193,7 +191,7 @@ const IntegrationsTab: React.FC = () => {
         connectingPlatform={connectingPlatform}
         disconnectingId={disconnectingId}
       />
-      
+
       <PlatformCategory
         title="AI Integrations"
         description="Connect AI services for enhanced capabilities."

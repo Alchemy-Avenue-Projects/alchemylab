@@ -3,12 +3,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AiSuggestion, Ad, SuggestionType } from "@/types/database";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const useAISuggestions = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+
   const { profile } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -52,7 +52,7 @@ export const useAISuggestions = () => {
       // Then, mark the suggestion as accepted
       const { data, error } = await supabase
         .from("ai_suggestions")
-        .update({ 
+        .update({
           accepted: true,
           applied_at: new Date().toISOString()
         })
@@ -66,18 +66,11 @@ export const useAISuggestions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai-suggestions"] });
       queryClient.invalidateQueries({ queryKey: ["ads"] });
-      toast({
-        title: "Success",
-        description: "Suggestion applied successfully."
-      });
+      toast.success("Suggestion applied successfully.");
     },
     onError: (error) => {
       console.error("Error accepting suggestion:", error);
-      toast({
-        title: "Error",
-        description: "Failed to apply suggestion.",
-        variant: "destructive"
-      });
+      toast.error("Failed to apply suggestion.");
     }
   });
 
@@ -86,7 +79,7 @@ export const useAISuggestions = () => {
     mutationFn: async (suggestionId: string) => {
       const { data, error } = await supabase
         .from("ai_suggestions")
-        .update({ 
+        .update({
           accepted: false,
           applied_at: new Date().toISOString()
         })
@@ -99,36 +92,29 @@ export const useAISuggestions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai-suggestions"] });
-      toast({
-        title: "Success",
-        description: "Suggestion rejected."
-      });
+      toast.success("Suggestion rejected.");
     },
     onError: (error) => {
       console.error("Error rejecting suggestion:", error);
-      toast({
-        title: "Error",
-        description: "Failed to reject suggestion.",
-        variant: "destructive"
-      });
+      toast.error("Failed to reject suggestion.");
     }
   });
 
   // Generate new suggestion
   const generateSuggestion = async (adId: string, suggestionType: SuggestionType) => {
     if (!profile?.id || !adId) return null;
-    
+
     try {
       setIsGenerating(true);
-      
+
       // For a real implementation, we would call an OpenAI edge function here
       // This is a mock implementation that creates a placeholder suggestion
-      const suggestedText = suggestionType === "copy_change" 
-        ? `Improved headline: Try our amazing product today!` 
+      const suggestedText = suggestionType === "copy_change"
+        ? `Improved headline: Try our amazing product today!`
         : `This is an AI-generated suggestion that would typically come from OpenAI. It's designed to improve your ad performance based on analytics data.`;
-      
+
       const reason = "Based on analytics, this suggestion might improve engagement rates.";
-      
+
       // Insert the new suggestion
       const { data, error } = await supabase
         .from("ai_suggestions")
@@ -141,25 +127,18 @@ export const useAISuggestions = () => {
         })
         .select()
         .single();
-        
+
       if (error) throw error;
-      
+
       // Refresh suggestions
       queryClient.invalidateQueries({ queryKey: ["ai-suggestions"] });
-      
-      toast({
-        title: "Success",
-        description: "New suggestion generated."
-      });
-      
+
+      toast.success("New suggestion generated.");
+
       return data;
     } catch (error) {
       console.error("Error generating suggestion:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate suggestion.",
-        variant: "destructive"
-      });
+      toast.error("Failed to generate suggestion.");
       return null;
     } finally {
       setIsGenerating(false);

@@ -1,20 +1,20 @@
 
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { 
-  Calendar, 
+import {
+  Calendar,
   Download,
   FileText,
   Filter,
   RefreshCw
 } from "lucide-react";
-import { 
-  AreaChart, 
-  CartesianGrid, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  Area, 
+import {
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Area,
   ResponsiveContainer,
   LineChart,
   Line,
@@ -35,16 +35,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useCampaigns } from "@/hooks/useCampaigns";
 
 const AnalyticsData: React.FC = () => {
-  const { toast } = useToast();
+
   const [reportTitle, setReportTitle] = useState("Analytics Report");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  
-  const { 
+
+  const {
     analyticsData,
     isLoading,
     error,
@@ -53,7 +53,7 @@ const AnalyticsData: React.FC = () => {
     generateReport,
     refetch
   } = useAnalytics();
-  
+
   const { campaigns, isLoading: isLoadingCampaigns } = useCampaigns();
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
@@ -87,19 +87,12 @@ const AnalyticsData: React.FC = () => {
     try {
       const result = await generateReport(reportTitle);
       if (result) {
-        toast({
-          title: "Report generated",
-          description: "Your report has been generated and saved.",
-        });
+        toast.success("Your report has been generated and saved.");
       } else {
         throw new Error("Failed to generate report");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate report. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to generate report. Please try again.");
     } finally {
       setIsGeneratingReport(false);
     }
@@ -107,7 +100,17 @@ const AnalyticsData: React.FC = () => {
 
   const formatData = () => {
     if (!analyticsData) return [];
-    
+
+    interface GroupedData {
+      date: string;
+      ctr: number;
+      impressions: number;
+      clicks: number;
+      conversions: number;
+      cost: number;
+      revenue: number;
+    }
+
     // Group data by date
     const groupedByDate = analyticsData.reduce((acc, item) => {
       const date = item.date;
@@ -122,7 +125,7 @@ const AnalyticsData: React.FC = () => {
           revenue: 0
         };
       }
-      
+
       // Sum metrics
       acc[date].impressions += item.impressions || 0;
       acc[date].clicks += item.clicks || 0;
@@ -130,12 +133,12 @@ const AnalyticsData: React.FC = () => {
       acc[date].conversions += item.conversions || 0;
       acc[date].cost += item.cost || 0;
       acc[date].revenue += item.revenue || 0;
-      
+
       return acc;
-    }, {} as Record<string, any>);
-    
+    }, {} as Record<string, GroupedData>);
+
     // Convert to array and sort by date
-    return Object.values(groupedByDate).sort((a, b) => 
+    return Object.values(groupedByDate).sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
   };
@@ -178,7 +181,7 @@ const AnalyticsData: React.FC = () => {
           <Button variant="outline" size="icon" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button 
+          <Button
             className="alchemy-gradient"
             onClick={handleGenerateReport}
             disabled={isGeneratingReport || !analyticsData || analyticsData.length === 0}
@@ -197,7 +200,7 @@ const AnalyticsData: React.FC = () => {
           </Button>
         </div>
       </div>
-      
+
       <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
         <div className="flex-1">
           <Select
@@ -237,14 +240,14 @@ const AnalyticsData: React.FC = () => {
           </Select>
         </div>
       </div>
-      
+
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="conversions">Conversions</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="overview" className="mt-4">
           <Card>
             <CardHeader>
@@ -265,20 +268,20 @@ const AnalyticsData: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={formattedData}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(date) => format(new Date(date), "MMM d")} 
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(date) => format(new Date(date), "MMM d")}
                       />
-                      <YAxis 
-                        yAxisId="left" 
+                      <YAxis
+                        yAxisId="left"
                         tickFormatter={(value) => `${value.toFixed(2)}%`}
                       />
-                      <YAxis 
-                        yAxisId="right" 
-                        orientation="right" 
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
                         tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value, name) => {
                           if (name === "ctr") return [`${Number(value).toFixed(2)}%`, "CTR"];
                           if (name === "impressions") return [value, "Impressions"];
@@ -287,19 +290,19 @@ const AnalyticsData: React.FC = () => {
                         labelFormatter={(label) => format(new Date(label), "MMMM d, yyyy")}
                       />
                       <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="ctr" 
-                        name="CTR" 
-                        stroke="#8884d8" 
-                        yAxisId="left" 
+                      <Line
+                        type="monotone"
+                        dataKey="ctr"
+                        name="CTR"
+                        stroke="#8884d8"
+                        yAxisId="left"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="impressions" 
-                        name="Impressions" 
-                        stroke="#82ca9d" 
-                        yAxisId="right" 
+                      <Line
+                        type="monotone"
+                        dataKey="impressions"
+                        name="Impressions"
+                        stroke="#82ca9d"
+                        yAxisId="right"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -308,7 +311,7 @@ const AnalyticsData: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="conversions" className="mt-4">
           <Card>
             <CardHeader>
@@ -329,19 +332,19 @@ const AnalyticsData: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={formattedData}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(date) => format(new Date(date), "MMM d")} 
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(date) => format(new Date(date), "MMM d")}
                       />
                       <YAxis />
-                      <Tooltip 
+                      <Tooltip
                         labelFormatter={(label) => format(new Date(label), "MMMM d, yyyy")}
                       />
                       <Legend />
-                      <Bar 
-                        dataKey="conversions" 
-                        name="Conversions" 
-                        fill="#8b5cf6" 
+                      <Bar
+                        dataKey="conversions"
+                        name="Conversions"
+                        fill="#8b5cf6"
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -350,7 +353,7 @@ const AnalyticsData: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="revenue" className="mt-4">
           <Card>
             <CardHeader>
@@ -371,31 +374,31 @@ const AnalyticsData: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={formattedData}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(date) => format(new Date(date), "MMM d")} 
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(date) => format(new Date(date), "MMM d")}
                       />
-                      <YAxis 
+                      <YAxis
                         tickFormatter={(value) => `$${value}`}
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value) => [`$${Number(value).toFixed(2)}`, ""]}
                         labelFormatter={(label) => format(new Date(label), "MMMM d, yyyy")}
                       />
                       <Legend />
-                      <Area 
-                        type="monotone" 
-                        dataKey="revenue" 
-                        name="Revenue" 
-                        fill="#3b82f6" 
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        name="Revenue"
+                        fill="#3b82f6"
                         stroke="#3b82f6"
                         fillOpacity={0.8}
                       />
-                      <Area 
-                        type="monotone" 
-                        dataKey="cost" 
-                        name="Cost" 
-                        fill="#ef4444" 
+                      <Area
+                        type="monotone"
+                        dataKey="cost"
+                        name="Cost"
+                        fill="#ef4444"
                         stroke="#ef4444"
                         fillOpacity={0.8}
                       />

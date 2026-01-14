@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { UserRole } from "@/types/roles";
 
 // Extend the Profile type to include invitation_status for new users
@@ -12,7 +12,7 @@ type InvitationStatus = "pending" | "accepted" | "rejected";
 export const useTeam = () => {
   const queryClient = useQueryClient();
   const { profile: currentUserProfile, user } = useAuth();
-  const { toast } = useToast();
+
   const [isUpdating, setIsUpdating] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
 
@@ -60,19 +60,12 @@ export const useTeam = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
-      toast({
-        title: "Success",
-        description: "Team member role updated successfully."
-      });
+      toast.success("Team member role updated successfully.");
       setIsUpdating(false);
     },
     onError: (error) => {
       console.error("Error updating role:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update team member role.",
-        variant: "destructive"
-      });
+      toast.error("Failed to update team member role.");
       setIsUpdating(false);
     }
   });
@@ -82,7 +75,7 @@ export const useTeam = () => {
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
       setIsInviting(true);
       console.log("Starting invitation process for:", email, "with role:", role);
-      
+
       // Check if user and organization_id are available
       if (!currentUserProfile?.organization_id) {
         console.error("Missing organization_id in user profile");
@@ -152,19 +145,12 @@ export const useTeam = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
-      toast({
-        title: "Invitation Sent",
-        description: `Team member invitation has been sent to ${data?.email || 'the provided email address'}.`
-      });
+      toast.success(`Team member invitation has been sent to ${data?.email || 'the provided email address'}.`);
       setIsInviting(false);
     },
     onError: (error: any) => {
       console.error("Error inviting user:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to invite team member.",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to invite team member.");
       setIsInviting(false);
     }
   });

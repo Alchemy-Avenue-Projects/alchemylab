@@ -5,11 +5,11 @@ import { usePlatforms } from "@/contexts/PlatformsContext";
 import ProductBriefForm from "./product-brief/ProductBriefForm";
 import { useProductBriefService } from "./product-brief/useProductBriefService";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ProductBriefTab: React.FC = () => {
-  const { toast } = useToast();
+
   const { connections } = usePlatforms();
   const {
     products,
@@ -42,11 +42,7 @@ const ProductBriefTab: React.FC = () => {
       await refetch();
     } catch (error) {
       console.error("Retry failed:", error);
-      toast({
-        title: "Retry Failed",
-        description: "Failed to reload product briefs. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to reload product briefs. Please try again.");
     }
   };
 
@@ -73,9 +69,9 @@ const ProductBriefTab: React.FC = () => {
           <AlertTitle>Failed to Load Product Briefs</AlertTitle>
           <AlertDescription className="flex items-center justify-between">
             <span>Unable to load product briefs. Please try again.</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleRetry}
               className="ml-4"
             >
@@ -111,11 +107,11 @@ const ProductBriefTab: React.FC = () => {
           />
         ))
       )}
-      
+
       {products.length > 0 && (
-        <Button 
-          variant="outline" 
-          className="w-full py-6 border-dashed flex items-center justify-center gap-2" 
+        <Button
+          variant="outline"
+          className="w-full py-6 border-dashed flex items-center justify-center gap-2"
           onClick={handleAddProduct}
         >
           <PlusCircle className="h-4 w-4" />
