@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Platform } from "@/types/platforms";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,20 @@ import { usePlatforms } from "@/contexts/PlatformsContext";
 import PlatformCategory from "./integration/PlatformCategory";
 import ApiKeyDialog from "./integration/ApiKeyDialog";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
+
+// Tier limits for ad accounts (from PRD)
+const TIER_LIMITS: Record<string, number> = {
+  trial: 1,
+  starter: 3,
+  pro: 7,
+  enterprise: Infinity,
+};
+
+// Ad platforms that count towards the limit
+const AD_PLATFORMS: Platform[] = ['facebook', 'google', 'linkedin', 'tiktok'];
 
 // Define platform categories - Remove Pinterest
 const adPlatforms = [
@@ -34,7 +48,45 @@ const IntegrationsTab: React.FC = () => {
   const [currentPlatform, setCurrentPlatform] = useState<Platform | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [orgPlan, setOrgPlan] = useState<string>('trial');
   const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  // Fetch organization plan
+  useEffect(() => {
+    const fetchOrgPlan = async () => {
+      if (!profile?.organization_id) return;
+      
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('plan')
+        .eq('id', profile.organization_id)
+        .single();
+      
+      if (data && !error) {
+        setOrgPlan(data.plan);
+      }
+    };
+    
+    fetchOrgPlan();
+  }, [profile?.organization_id]);
+
+  // Calculate tier limit status
+  const tierStatus = useMemo(() => {
+    const connectedAdAccounts = connections.filter(
+      conn => conn.connected && AD_PLATFORMS.includes(conn.platform as Platform)
+    ).length;
+    
+    const limit = TIER_LIMITS[orgPlan] ?? 1;
+    const limitReached = connectedAdAccounts >= limit;
+    
+    return {
+      connectedCount: connectedAdAccounts,
+      limit,
+      limitReached,
+      planName: orgPlan.charAt(0).toUpperCase() + orgPlan.slice(1),
+    };
+  }, [connections, orgPlan]);
 
   useEffect(() => {
     // Check if we've been redirected with platform and modal params
@@ -170,6 +222,26 @@ const IntegrationsTab: React.FC = () => {
 
   return (
     <>
+      {/* Tier limit warning */}
+      {tierStatus.limitReached && tierStatus.limit !== Infinity && (
+        <Alert variant="default" className="mb-6 border-amber-200 bg-amber-50">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Ad Account Limit Reached</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            Your {tierStatus.planName} plan allows {tierStatus.limit} ad account{tierStatus.limit !== 1 ? 's' : ''}.
+            You have {tierStatus.connectedCount} connected.{' '}
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-amber-800 underline"
+              onClick={() => navigate('/pricing')}
+            >
+              Upgrade your plan
+            </Button>{' '}
+            to connect more platforms.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <PlatformCategory
         title="Ad Platform Integrations"
         description="Connect your ad accounts from various platforms."
@@ -179,6 +251,8 @@ const IntegrationsTab: React.FC = () => {
         onDisconnect={handleDisconnect}
         connectingPlatform={connectingPlatform}
         disconnectingId={disconnectingId}
+        tierLimitReached={tierStatus.limitReached}
+        tierLimitMessage={`${tierStatus.planName} plan limit`}
       />
 
       <PlatformCategory

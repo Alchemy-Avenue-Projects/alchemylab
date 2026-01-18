@@ -28,6 +28,8 @@ interface PlatformCategoryProps {
   onDisconnect: (connectionId: string) => void;
   connectingPlatform: Platform | null;
   disconnectingId: string | null;
+  tierLimitReached?: boolean;
+  tierLimitMessage?: string;
 }
 
 const PlatformCategory: FC<PlatformCategoryProps> = ({
@@ -39,6 +41,8 @@ const PlatformCategory: FC<PlatformCategoryProps> = ({
   onDisconnect,
   connectingPlatform,
   disconnectingId,
+  tierLimitReached = false,
+  tierLimitMessage,
 }) => {
   const getConnection = (platform: Platform) => {
     return connections.find(conn => conn.platform === platform);
@@ -91,20 +95,26 @@ const PlatformCategory: FC<PlatformCategoryProps> = ({
               isLoading
             });
 
+            const isConnected = !!connection;
+            // Only disable if limit reached AND not already connected
+            const shouldDisable = tierLimitReached && !isConnected;
+
             return (
               <IntegrationItem
                 key={platformItem.platform}
                 name={platformItem.name}
-                status={getConnection(platformItem.platform) ? "connected" : "not-connected"}
-                account={getConnection(platformItem.platform)?.account_name}
+                status={isConnected ? "connected" : "not-connected"}
+                account={connection?.account_name}
                 icon={getPlatformIcon(platformItem.platform)}
                 onConnect={() => onConnect(platformItem.platform)}
                 onDisconnect={
-                  getConnection(platformItem.platform)
-                    ? () => onDisconnect(getConnection(platformItem.platform)!.id)
+                  connection
+                    ? () => onDisconnect(connection.id)
                     : undefined
                 }
                 isLoading={isLoading}
+                disabled={shouldDisable}
+                disabledReason={shouldDisable ? tierLimitMessage : undefined}
               />
             );
           })}

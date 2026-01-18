@@ -107,6 +107,70 @@ export type Database = {
           },
         ]
       }
+      ai_generations: {
+        Row: {
+          created_at: string | null
+          generation_type: string
+          id: string
+          input_prompt: string | null
+          latency_ms: number | null
+          model_used: string | null
+          organization_id: string | null
+          output_content: Json | null
+          status: string | null
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          generation_type: string
+          id?: string
+          input_prompt?: string | null
+          latency_ms?: number | null
+          model_used?: string | null
+          organization_id?: string | null
+          output_content?: Json | null
+          status?: string | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          generation_type?: string
+          id?: string
+          input_prompt?: string | null
+          latency_ms?: number | null
+          model_used?: string | null
+          organization_id?: string | null
+          output_content?: Json | null
+          status?: string | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_clients"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "ai_generations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_generations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_learnings: {
         Row: {
           client_id: string | null
@@ -334,6 +398,70 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          correlation_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          new_value: Json | null
+          old_value: Json | null
+          organization_id: string | null
+          resource_id: string | null
+          resource_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          correlation_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          new_value?: Json | null
+          old_value?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          correlation_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          new_value?: Json | null
+          old_value?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_clients"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing: {
         Row: {
           created_at: string
@@ -509,6 +637,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_nonces: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          nonce: string
+          platform: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          nonce: string
+          platform: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          nonce?: string
+          platform?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_nonces_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -790,9 +953,10 @@ export type Database = {
       }
     }
     Functions: {
-      get_user_org_id: {
+      get_user_org_id: { Args: Record<PropertyKey, never>; Returns: string }
+      sync_platform_connection_to_ad_account: {
         Args: Record<PropertyKey, never>
-        Returns: string
+        Returns: undefined
       }
     }
     Enums: {
@@ -815,7 +979,7 @@ export type Database = {
         | "campaign_warning"
         | "account_disconnected"
         | "report_ready"
-      organization_plan: "trial" | "basic" | "pro" | "enterprise"
+      organization_plan: "trial" | "starter" | "pro" | "enterprise"
       suggestion_type:
         | "copy_change"
         | "asset_swap"
@@ -958,7 +1122,7 @@ export const Constants = {
         "account_disconnected",
         "report_ready",
       ],
-      organization_plan: ["trial", "basic", "pro", "enterprise"],
+      organization_plan: ["trial", "starter", "pro", "enterprise"],
       suggestion_type: [
         "copy_change",
         "asset_swap",

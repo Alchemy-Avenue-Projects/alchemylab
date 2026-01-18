@@ -29,7 +29,7 @@ export const pricingPlans: PricingPlan[] = [
       annual: 39,
     },
     features: [
-      { text: '1 Ad Account', included: true },
+      { text: '3 Ad Accounts', included: true },
       { text: 'Up to 3 users', included: true },
       { text: 'Basic Analytics', included: true },
       { text: '10 AI Generations per month', included: true },
@@ -50,7 +50,7 @@ export const pricingPlans: PricingPlan[] = [
       annual: 79,
     },
     features: [
-      { text: '5 Ad Accounts', included: true },
+      { text: '7 Ad Accounts', included: true },
       { text: 'Up to 10 users', included: true },
       { text: 'Advanced Analytics', included: true },
       { text: '50 AI Generations per month', included: true },

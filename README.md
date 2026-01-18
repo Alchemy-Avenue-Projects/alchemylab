@@ -1,73 +1,72 @@
-# Welcome to your Lovable project
+# AlchemyLab
 
-## Project info
+AlchemyLab is a marketing platform that allows you to manage and analyze your ad campaigns across multiple platforms (Facebook, TikTok, LinkedIn, Google).
 
-**URL**: https://lovable.dev/projects/69e650c3-95da-48a1-abdf-bd4fadb261e7
+## Features
 
-## How can I edit this code?
+- **Multi-platform Integration**: Connect and sync ads from Facebook, TikTok, LinkedIn, and Google.
+- **Analytics Dashboard**: Visualize campaign performance with charts and metrics.
+- **AI Suggestions**: Get AI-powered recommendations to optimize your ad copy and targeting.
+- **Campaign Management**: Create, edit, and manage campaigns directly from the platform.
+- **Team Collaboration**: Invite team members and manage permissions.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React, Vite, TypeScript
+- **UI**: Tailwind CSS, shadcn/ui, Lucide Icons, Recharts
+- **State Management**: React Query (TanStack Query), React Context
+- **Backend/Auth**: Supabase (Auth, Database, Edge Functions)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/69e650c3-95da-48a1-abdf-bd4fadb261e7) and start prompting.
+## Development
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 20+ (managed via `.nvmrc`)
+- npm
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Setup
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-Follow these steps:
+2. **Environment Variables**:
+   Create a `.env` file in the root directory based on `.env.example` (if available) or ask a team member for the keys.  
+   Required variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Start Development Server**:
+   ```bash
+   npm run dev
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Build for Production**:
+   ```bash
+   npm run build
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Code Quality
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+- **Linting**: `npm run lint`
+- **Type Checking**: `npm run typecheck`
+- **Testing**: `npm run test` (placeholder)
+
+## Project Structure
+
+- `/src/components`: Reusable UI components and feature-specific components
+- `/src/pages`: Main application pages (Dashboard, Campaigns, Settings, etc.)
+- `/src/hooks`: Custom React hooks (including consolidated toast hooks)
+- `/src/services`: API service layers and integrations
+- `/src/utils`: Utility functions (logging, formatting, environmental vars)
+- `/src/contexts`: React Context providers (Auth, Platforms)
+- `/supabase`: Supabase configuration and Edge Functions
+
+## Deployment
+
+The application is deployed via Supabase. Edge functions can be deployed using the Supabase CLI:
+
+```bash
+supabase functions deploy <function-name>
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/69e650c3-95da-48a1-abdf-bd4fadb261e7) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes it is!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)

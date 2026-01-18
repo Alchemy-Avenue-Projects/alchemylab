@@ -101,14 +101,74 @@ async function handler(req: Request): Promise<Response> {
 
     const orgId = profile.organization_id as string;
 
+    // 3.5) Check tier limits before proceeding
+    const TIER_LIMITS: Record<string, number> = {
+      trial: 1,
+      starter: 3,
+      pro: 7,
+      enterprise: Infinity,
+    };
+    const AD_PLATFORMS = ['facebook', 'google', 'tiktok', 'linkedin'];
+
+    // Get organization plan
+    const { data: org, error: orgErr } = await sb
+      .from("organizations")
+      .select("plan")
+      .eq("id", orgId)
+      .single();
+
+    if (orgErr || !org) {
+      return json({ error: "Could not fetch organization details" }, 500, req.headers.get('Origin') || undefined);
+    }
+
+    const planLimit = TIER_LIMITS[org.plan] ?? 1;
+
+    // Count existing ad platform connections
+    const { count: existingCount, error: countErr } = await sb
+      .from("platform_connections")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("connected", true)
+      .in("platform", AD_PLATFORMS);
+
+    if (countErr) {
+      console.error("Error counting connections:", countErr);
+    }
+
+    const currentConnections = existingCount ?? 0;
+
+    // Check if this is a new connection (not an update)
+    const { data: existingConnection } = await sb
+      .from("platform_connections")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("platform", "facebook")
+      .single();
+
+    // If no existing connection and limit reached, reject
+    if (!existingConnection && currentConnections >= planLimit) {
+      return json({ 
+        error: "Tier limit reached",
+        message: `Your ${org.plan} plan allows ${planLimit} ad account${planLimit !== 1 ? 's' : ''}. Please upgrade to connect more platforms.`,
+        currentCount: currentConnections,
+        limit: planLimit,
+        plan: org.plan
+      }, 403, req.headers.get('Origin') || undefined);
+    }
+
     // 4) Facebook code → token
     const fb = await exchangeCode(code);
 
     // 5) upsert connection
-    // Encrypt token at rest if ENCRYPTION_KEY is configured
-    const base64Key = Deno.env.get('ENCRYPTION_KEY') || '';
+    // Encrypt token at rest - ENCRYPTION_KEY is required
+    const base64Key = Deno.env.get('ENCRYPTION_KEY');
+    if (!base64Key) {
+      console.error("ENCRYPTION_KEY is not configured - this is required for production");
+      return json({ error: "Server configuration error: encryption not configured" }, 500, req.headers.get('Origin') || undefined);
+    }
+    
     let storedToken = fb.accessToken;
-    if (base64Key) {
+    {
       const raw = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
       const key = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt']);
       const iv = crypto.getRandomValues(new Uint8Array(12));

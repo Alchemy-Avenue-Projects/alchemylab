@@ -13,6 +13,8 @@ interface IntegrationItemProps {
   onConnect?: () => void;
   onDisconnect?: () => void;
   isLoading?: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 const IntegrationItem: React.FC<IntegrationItemProps> = ({ 
@@ -22,7 +24,9 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
   icon,
   onConnect,
   onDisconnect,
-  isLoading = false
+  isLoading = false,
+  disabled = false,
+  disabledReason
 }) => {
   const handleConnect = () => {
     console.log(`[IntegrationItem] Button clicked for ${name}`);
@@ -84,18 +88,25 @@ const IntegrationItem: React.FC<IntegrationItemProps> = ({
           </Button>
         </div>
       ) : (
-        <Button 
-          className="bg-primary hover:bg-primary/90 text-white"
-          onClick={handleConnect}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Connecting...
-            </>
-          ) : "Connect"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {disabled && disabledReason && (
+            <span className="text-xs text-muted-foreground max-w-[150px] text-right">
+              {disabledReason}
+            </span>
+          )}
+          <Button 
+            className={disabled ? "bg-muted text-muted-foreground" : "bg-primary hover:bg-primary/90 text-white"}
+            onClick={handleConnect}
+            disabled={isLoading || disabled}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Connecting...
+              </>
+            ) : disabled ? "Upgrade" : "Connect"}
+          </Button>
+        </div>
       )}
     </div>
   );
