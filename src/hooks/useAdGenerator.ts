@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { GenerateAdPayload, AdResult } from '@/types/creator';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useAdGenerator = () => {
   const [results, setResults] = useState<AdResult[]>([]);
@@ -11,37 +11,60 @@ export const useAdGenerator = () => {
     try {
       setIsGenerating(true);
       
-      // In a real implementation, this would be a call to an API endpoint
-      // that communicates with OpenAI or a backend service
-      console.log('Generating ads with payload:', payload);
+      console.log('[useAdGenerator] Generating ads with payload:', payload);
       
-      // Mock response for demonstration
-      // In a real implementation, this would come from the API
-      const mockResults: AdResult[] = payload.platform.map(platform => ({
-        platform,
-        headline: `Boost your ${payload.product} with our innovative solution`,
-        body: `Perfect for ${payload.audience} in ${payload.location}. ${payload.cta ? 'Try it now!' : ''}`,
-        ...(platform === 'Meta' && {
-          primary_text: `Looking for a solution for ${payload.product}? We have what you need.`,
-          description: `Our product is designed for ${payload.audience} like you.`
-        })
-      }));
+      // Get current session for auth
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!session) {
+        toast.error('Please sign in to generate ads');
+        return [];
+      }
+
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke('generate-ad-copy', {
+        body: {
+          product: payload.product,
+          audience: payload.audience,
+          location: payload.location,
+          tone: payload.tone,
+          cta: payload.cta,
+          platform: payload.platform,
+          additionalContext: payload.additionalContext,
+        },
+      });
+
+      if (error) {
+        console.error('[useAdGenerator] Edge function error:', error);
+        throw new Error(error.message || 'Failed to generate ads');
+      }
+
+      if (!data?.success || !data?.results) {
+        throw new Error(data?.error || 'Invalid response from ad generator');
+      }
+
+      const generatedResults: AdResult[] = data.results;
       
-      setResults(mockResults);
-      toast.success('Ad copy generated successfully!');
+      setResults(generatedResults);
       
-      return mockResults;
+      const modelInfo = data.model === 'mock' ? ' (demo mode)' : '';
+      toast.success(`Ad copy generated successfully${modelInfo}!`);
+      
+      return generatedResults;
     } catch (error) {
-      console.error('Error generating ads:', error);
-      toast.error('Failed to generate ad copy');
+      console.error('[useAdGenerator] Error generating ads:', error);
+      toast.error('Failed to generate ad copy', {
+        description: (error as Error).message,
+      });
       return [];
     } finally {
       setIsGenerating(false);
     }
   };
 
-  return { generateAds, results, isGenerating };
+  const clearResults = () => {
+    setResults([]);
+  };
+
+  return { generateAds, results, isGenerating, clearResults };
 };
