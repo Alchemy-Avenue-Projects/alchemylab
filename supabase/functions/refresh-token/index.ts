@@ -110,16 +110,13 @@ const refreshToken = async (platform: string, refreshToken: string) => {
 };
 
 // Simple AES-GCM encryption helper using a base64 key from env ENCRYPTION_KEY
-const getCryptoKey = async () => {
-  const base64Key = Deno.env.get('ENCRYPTION_KEY') || '';
-  if (!base64Key) return null;
-  const raw = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
-  return await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt']);
-};
-
 const encrypt = async (plaintext: string): Promise<string> => {
-  const key = await getCryptoKey();
-  if (!key) return plaintext; // fallback to plaintext if key not configured
+  const base64Key = Deno.env.get('ENCRYPTION_KEY');
+  if (!base64Key) {
+    throw new Error('ENCRYPTION_KEY is required for token encryption');
+  }
+  const raw = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(plaintext);
   const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
@@ -197,10 +194,11 @@ const handleRequest = async (req: Request) => {
       );
     }
     
+    // Don't return raw tokens to frontend - only confirm refresh succeeded
     return new Response(
       JSON.stringify({ 
-        accessToken: tokenInfo.accessToken, 
-        refreshToken: tokenInfo.refreshToken,
+        success: true,
+        message: 'Token refreshed successfully',
         expiresAt: tokenInfo.expiresAt
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

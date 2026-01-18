@@ -164,16 +164,13 @@ const getAccountInfo = async (platform: string, accessToken: string) => {
 };
 
 // Simple AES-GCM encryption helper using a base64 key from env ENCRYPTION_KEY
-const getCryptoKey = async () => {
-  const base64Key = Deno.env.get('ENCRYPTION_KEY') || '';
-  if (!base64Key) return null;
-  const raw = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
-  return await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt']);
-};
-
 const encrypt = async (plaintext: string): Promise<string> => {
-  const key = await getCryptoKey();
-  if (!key) return plaintext; // fallback to plaintext if key not configured
+  const base64Key = Deno.env.get('ENCRYPTION_KEY');
+  if (!base64Key) {
+    throw new Error('ENCRYPTION_KEY is required for token encryption');
+  }
+  const raw = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(plaintext);
   const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
@@ -182,6 +179,10 @@ const encrypt = async (plaintext: string): Promise<string> => {
   combined.set(new Uint8Array(cipherBuf), iv.length);
   return btoa(String.fromCharCode(...combined));
 };
+
+// Tier limits for ad accounts
+const TIER_LIMITS: Record<string, number> = { trial: 1, starter: 3, pro: 7, enterprise: Infinity };
+const AD_PLATFORMS = ['facebook', 'google', 'tiktok', 'linkedin'];
 
 const handleRequest = async (req: Request) => {
   try {
@@ -196,12 +197,22 @@ const handleRequest = async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Decode state to get the platform (state is base64 JSON with platform info)
+    let platform = state; // fallback if state is just a platform name (legacy)
+    try {
+      const decoded = JSON.parse(atob(state));
+      // Platform might be in the state or we infer from context
+      platform = decoded.platform || state;
+    } catch {
+      // state might be plain platform name (legacy flow)
+    }
     
     // Exchange code for tokens
-    const tokenInfo = await exchangeCodeForToken(state, code, redirectUri);
+    const tokenInfo = await exchangeCodeForToken(platform, code, redirectUri);
     
     // Get account information
-    const accountInfo = await getAccountInfo(state, tokenInfo.accessToken);
+    const accountInfo = await getAccountInfo(platform, tokenInfo.accessToken);
     
     // Create Supabase client with admin privileges
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -231,29 +242,63 @@ const handleRequest = async (req: Request) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Check tier limits for ad platforms
+    if (AD_PLATFORMS.includes(platform)) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('plan')
+        .eq('id', userProfile.organization_id)
+        .single();
+      
+      const planLimit = TIER_LIMITS[org?.plan ?? 'trial'] ?? 1;
+      
+      const { count: existingCount } = await supabase
+        .from('platform_connections')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', userProfile.organization_id)
+        .eq('connected', true)
+        .in('platform', AD_PLATFORMS);
+      
+      const { data: existingConnection } = await supabase
+        .from('platform_connections')
+        .select('id')
+        .eq('organization_id', userProfile.organization_id)
+        .eq('platform', platform)
+        .single();
+      
+      if (!existingConnection && (existingCount ?? 0) >= planLimit) {
+        return new Response(
+          JSON.stringify({ error: 'Tier limit reached', message: `Your plan allows ${planLimit} ad account(s). Please upgrade.` }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
     
-    // Store connection in database
+    // Store connection in database (upsert to handle reconnections)
     const encAccess = await encrypt(tokenInfo.accessToken);
     const encRefresh = tokenInfo.refreshToken ? await encrypt(tokenInfo.refreshToken) : null;
 
-    const { data: connection, error: insertError } = await supabase
+    const { data: connection, error: upsertError } = await supabase
       .from('platform_connections')
-      .insert({
-        platform: state,
+      .upsert({
+        platform: platform,
         organization_id: userProfile.organization_id,
         auth_token: encAccess,
         refresh_token: encRefresh,
         token_expiry: tokenInfo.expiresAt,
         account_name: accountInfo.accountName || 'Connected Account',
         account_id: accountInfo.accountId,
-        connected_by: user.id
-      })
+        connected_by: user.id,
+        connected: true,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'organization_id,platform' })
       .select()
       .single();
     
-    if (insertError) {
+    if (upsertError) {
       return new Response(
-        JSON.stringify({ error: `Failed to store connection: ${insertError.message}` }),
+        JSON.stringify({ error: `Failed to store connection: ${upsertError.message}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
