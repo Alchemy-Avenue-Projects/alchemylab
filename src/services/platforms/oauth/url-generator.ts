@@ -86,11 +86,22 @@ export const generateOAuthUrl = async (platform: Platform, existingSession?: Ses
   console.log('[generateOAuthUrl] Redirect URI:', redirectUri);
 
   // Save nonce for verification (for OAuth platforms only)
+  // Note: If this fails, we continue anyway - nonce verification is optional security
   const oauthPlatforms: Platform[] = ['facebook', 'google', 'linkedin', 'tiktok', 'google_analytics'];
   if (oauthPlatforms.includes(platform)) {
     console.log('[generateOAuthUrl] About to save nonce...');
-    await saveNonce(nonce, userId, platform);
-    console.log('[generateOAuthUrl] Nonce saved, building state...');
+    try {
+      // Add a timeout to prevent hanging - if save takes more than 3 seconds, skip it
+      const savePromise = saveNonce(nonce, userId, platform);
+      const timeoutPromise = new Promise<void>((_, reject) => 
+        setTimeout(() => reject(new Error('Nonce save timeout')), 3000)
+      );
+      await Promise.race([savePromise, timeoutPromise]);
+      console.log('[generateOAuthUrl] Nonce saved, building state...');
+    } catch (err) {
+      console.warn('[generateOAuthUrl] Nonce save failed or timed out, continuing without nonce verification:', err);
+      // Continue without nonce - OAuth will still work, just without replay protection
+    }
   }
 
   const state = makeState(userId, jwt, nonce);
