@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const ProfileTab: React.FC = () => {
@@ -52,16 +52,13 @@ const ProfileTab: React.FC = () => {
       // Refresh the profile data in the AuthContext
       await supabase.auth.refreshSession();
 
-      toast({
-        title: "Changes saved",
+      toast.success("Changes saved", {
         description: "Your profile information has been updated."
       });
     } catch (err) {
       console.error('Error saving profile:', err);
-      toast({
-        title: "Error",
-        description: "Failed to save profile changes. Please try again.",
-        variant: "destructive"
+      toast.error("Error", {
+        description: "Failed to save profile changes. Please try again."
       });
     }
   };

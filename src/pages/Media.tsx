@@ -13,7 +13,7 @@ import {
   MoreVertical
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,17 +114,14 @@ const Media: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setIsCreateFolderOpen(false);
       setNewFolderName("");
-      toast({
-        title: "Folder Created",
+      toast.success("Folder Created", {
         description: "New folder has been created successfully",
       });
     },
     onError: (error) => {
       console.error("Error creating folder:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Could not create folder",
-        variant: "destructive",
       });
     }
   });
@@ -176,16 +173,13 @@ const Media: React.FC = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: ['assets', currentClientId] });
-      toast({
-        title: "Files Uploaded",
+      toast.success("Files Uploaded", {
         description: `${files.length} file(s) uploaded successfully`,
       });
     } catch (error) {
       console.error("Error uploading files:", error);
-      toast({
-        title: "Upload Failed",
+      toast.error("Upload Failed", {
         description: "There was an error uploading your files",
-        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
@@ -225,17 +219,14 @@ const Media: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets', currentClientId] });
-      toast({
-        title: "Asset Deleted",
+      toast.success("Asset Deleted", {
         description: "The asset has been removed",
       });
     },
     onError: (error) => {
       console.error("Error deleting asset:", error);
-      toast({
-        title: "Delete Failed",
+      toast.error("Delete Failed", {
         description: "Could not delete the asset",
-        variant: "destructive",
       });
     }
   });
