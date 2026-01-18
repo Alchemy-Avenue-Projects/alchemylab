@@ -72,14 +72,9 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.log("[connectPlatform] Called for platform:", platform);
       console.log(`Starting OAuth flow for ${platform}...`);
 
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error("[connectPlatform] Supabase session error:", sessionError.message);
-        throw new Error("Failed to get session");
-      }
-
-      if (!currentSession || !currentSession.user || !currentSession.access_token) {
+      // Use session from AuthContext instead of calling getSession() again
+      // (getSession() was causing hangs in some cases)
+      if (!session || !session.user || !session.access_token) {
         console.error("❌ No valid Supabase session or missing user/access_token");
         toast.error("Authentication Required", {
           description: "You need to be logged in to connect platforms"
@@ -87,6 +82,7 @@ export const PlatformsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return false;
       }
 
+      const currentSession = session;
       console.log("✅ Valid Supabase session found for user:", currentSession.user.id);
 
       // Skip OAuth for API key platforms
