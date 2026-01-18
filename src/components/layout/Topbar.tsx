@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useMobile } from "@/hooks/useMobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Logo } from "@/components/icons/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "./UserMenu";
@@ -13,7 +13,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 const Topbar: React.FC = () => {
   const navigate = useNavigate();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { toggleSidebar, setOpenMobile } = useSidebar();
 
