@@ -35,9 +35,19 @@ const ProfileTab: React.FC = () => {
     }));
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleSaveChanges = async () => {
+    if (!user?.id) {
+      toast.error("Not authenticated", {
+        description: "Please sign in to save your profile."
+      });
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           full_name: formState.name,
@@ -45,21 +55,28 @@ const ProfileTab: React.FC = () => {
           job_title: formState.role,
           bio: formState.bio
         })
-        .eq('id', user?.id);
+        .eq('id', user.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
-      // Refresh the profile data in the AuthContext
-      await supabase.auth.refreshSession();
+      if (!data || data.length === 0) {
+        console.warn('No rows updated - profile may not exist');
+      }
 
       toast.success("Changes saved", {
         description: "Your profile information has been updated."
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving profile:', err);
       toast.error("Error", {
-        description: "Failed to save profile changes. Please try again."
+        description: err?.message || "Failed to save profile changes. Please try again."
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -138,9 +155,9 @@ const ProfileTab: React.FC = () => {
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="alchemy-gradient" onClick={handleSaveChanges}>
+        <Button className="alchemy-gradient" onClick={handleSaveChanges} disabled={isSaving}>
           <Save className="h-4 w-4 mr-2" />
-          Save Changes
+          {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </CardFooter>
     </Card>
