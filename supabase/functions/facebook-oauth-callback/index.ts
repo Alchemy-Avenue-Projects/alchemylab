@@ -89,6 +89,30 @@ async function handler(req: Request): Promise<Response> {
     if (authErr || !user || user.id !== st.userId)
       return json({ error: "Invalid user session" }, 401, req.headers.get('Origin') || undefined);
 
+    // 2.5) Verify nonce to prevent replay attacks
+    if (st.nonce) {
+      const { data: nonceRecord, error: nonceErr } = await sb
+        .from("oauth_nonces")
+        .select("*")
+        .eq("nonce", st.nonce)
+        .eq("user_id", user.id)
+        .eq("platform", "facebook")
+        .single();
+
+      if (nonceErr || !nonceRecord) {
+        console.error("[OAuth] Nonce verification failed:", nonceErr);
+        return json({ error: "Invalid or expired OAuth state" }, 401, req.headers.get('Origin') || undefined);
+      }
+
+      // Check if nonce has expired
+      if (new Date(nonceRecord.expires_at) < new Date()) {
+        return json({ error: "OAuth state has expired" }, 401, req.headers.get('Origin') || undefined);
+      }
+
+      // Delete the nonce after use (one-time use)
+      await sb.from("oauth_nonces").delete().eq("nonce", st.nonce);
+    }
+
     // 3) fetch the organization_id that belongs to this user
     const { data: profile, error: pErr } = await sb
       .from("profiles")                    // ← change if your table is named differently

@@ -1,11 +1,12 @@
 /**
  * src/services/platforms/oauth/url-generator.ts
  *
- * One place that builds the OAuth “Authorize” URL for every platform.
+ * One place that builds the OAuth "Authorize" URL for every platform.
  * – Pulls the currently-signed-in Supabase session itself (so you never have
  *   to thread `jwt` or `userId` through the component tree manually).
  * – Puts *both* `userId` (UUID) and `jwt` (access token) in the `state`
  *   payload so the edge-function can verify the callback.
+ * – Saves the nonce to oauth_nonces table for verification on callback.
  */
 
 import { supabase }        from "@/integrations/supabase/client";
@@ -16,15 +17,44 @@ import { env }             from "@/utils/env";
 // ────────────────────────────────────────────────────────────
 // helpers
 // ────────────────────────────────────────────────────────────
-const makeState = (userId: string, jwt: string) =>
+interface StatePayload {
+  userId: string;
+  jwt: string;
+  timestamp: number;
+  nonce: string;
+}
+
+const generateNonce = (): string => 
+  crypto.randomUUID?.() ?? Math.random().toString(36).substring(2);
+
+const makeState = (userId: string, jwt: string, nonce: string): string =>
   btoa(
     JSON.stringify({
       userId,
       jwt,
       timestamp: Date.now(),
-      nonce: crypto.randomUUID?.() ?? Math.random().toString(36),
-    }),
+      nonce,
+    } as StatePayload),
   );
+
+/**
+ * Save nonce to database for later verification
+ */
+const saveNonce = async (nonce: string, userId: string, platform: Platform): Promise<void> => {
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
+  
+  const { error } = await supabase.from('oauth_nonces').insert({
+    nonce,
+    user_id: userId,
+    platform,
+    expires_at: expiresAt,
+  });
+
+  if (error) {
+    console.error('[OAuth] Failed to save nonce:', error);
+    throw new Error('Failed to initialize OAuth flow');
+  }
+};
 
 // ────────────────────────────────────────────────────────────
 // main
@@ -42,8 +72,16 @@ export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
 
   const userId = session.user.id;
   const jwt    = session.access_token;
-  const state  = makeState(userId, jwt);
+  const nonce  = generateNonce();
   const redirectUri = getRedirectUri(platform);
+
+  // Save nonce for verification (for OAuth platforms only)
+  const oauthPlatforms: Platform[] = ['facebook', 'google', 'linkedin', 'tiktok', 'google_analytics'];
+  if (oauthPlatforms.includes(platform)) {
+    await saveNonce(nonce, userId, platform);
+  }
+
+  const state = makeState(userId, jwt, nonce);
 
   switch (platform) {
     // ──────────────  FACEBOOK  ──────────────
