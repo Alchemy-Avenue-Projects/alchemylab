@@ -2,8 +2,7 @@
  * src/services/platforms/oauth/url-generator.ts
  *
  * One place that builds the OAuth "Authorize" URL for every platform.
- * – Pulls the currently-signed-in Supabase session itself (so you never have
- *   to thread `jwt` or `userId` through the component tree manually).
+ * – Accepts session as parameter to avoid redundant getSession() calls
  * – Puts *both* `userId` (UUID) and `jwt` (access token) in the `state`
  *   payload so the edge-function can verify the callback.
  * – Saves the nonce to oauth_nonces table for verification on callback.
@@ -13,6 +12,7 @@ import { supabase }        from "@/integrations/supabase/client";
 import { Platform }        from "@/types/platforms";
 import { OAUTH_CONFIG, getRedirectUri } from "./config";
 import { env }             from "@/utils/env";
+import { Session }         from "@supabase/supabase-js";
 
 // ────────────────────────────────────────────────────────────
 // helpers
@@ -59,14 +59,12 @@ const saveNonce = async (nonce: string, userId: string, platform: Platform): Pro
 // ────────────────────────────────────────────────────────────
 // main
 // ────────────────────────────────────────────────────────────
-export const generateOAuthUrl = async (platform: Platform): Promise<string> => {
-  // 1️⃣  Get the current Supabase session
-  const {
-    data: { session },
-    error: sessionErr,
-  } = await supabase.auth.getSession();
+export const generateOAuthUrl = async (platform: Platform, existingSession?: Session | null): Promise<string> => {
+  // Use provided session or throw if not available
+  // (Avoids redundant getSession() calls which can hang)
+  const session = existingSession;
 
-  if (sessionErr || !session || !session.user || !session.access_token) {
+  if (!session || !session.user || !session.access_token) {
     throw new Error("Not signed in – session missing or invalid");
   }
 
