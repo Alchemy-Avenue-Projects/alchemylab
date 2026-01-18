@@ -41,18 +41,25 @@ const makeState = (userId: string, jwt: string, nonce: string): string =>
  * Save nonce to database for later verification
  */
 const saveNonce = async (nonce: string, userId: string, platform: Platform): Promise<void> => {
+  console.log('[OAuth] Saving nonce to database...');
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
   
-  const { error } = await supabase.from('oauth_nonces').insert({
-    nonce,
-    user_id: userId,
-    platform,
-    expires_at: expiresAt,
-  });
+  try {
+    const { error } = await supabase.from('oauth_nonces').insert({
+      nonce,
+      user_id: userId,
+      platform,
+      expires_at: expiresAt,
+    });
 
-  if (error) {
-    console.error('[OAuth] Failed to save nonce:', error);
-    throw new Error('Failed to initialize OAuth flow');
+    if (error) {
+      console.error('[OAuth] Failed to save nonce:', error);
+      throw new Error('Failed to initialize OAuth flow');
+    }
+    console.log('[OAuth] Nonce saved successfully');
+  } catch (err) {
+    console.error('[OAuth] Exception saving nonce:', err);
+    throw err;
   }
 };
 
@@ -70,16 +77,24 @@ export const generateOAuthUrl = async (platform: Platform, existingSession?: Ses
 
   const userId = session.user.id;
   const jwt    = session.access_token;
+  console.log('[generateOAuthUrl] Session validated, userId:', userId);
+  
   const nonce  = generateNonce();
+  console.log('[generateOAuthUrl] Nonce generated:', nonce);
+  
   const redirectUri = getRedirectUri(platform);
+  console.log('[generateOAuthUrl] Redirect URI:', redirectUri);
 
   // Save nonce for verification (for OAuth platforms only)
   const oauthPlatforms: Platform[] = ['facebook', 'google', 'linkedin', 'tiktok', 'google_analytics'];
   if (oauthPlatforms.includes(platform)) {
+    console.log('[generateOAuthUrl] About to save nonce...');
     await saveNonce(nonce, userId, platform);
+    console.log('[generateOAuthUrl] Nonce saved, building state...');
   }
 
   const state = makeState(userId, jwt, nonce);
+  console.log('[generateOAuthUrl] State created, building URL...');
 
   switch (platform) {
     // ──────────────  FACEBOOK  ──────────────
